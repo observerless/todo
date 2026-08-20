@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <!-- 모바일 최적화: 줌 방지, 노치 디스플레이(아이폰 등) 꽉 채우기 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    
+    <!-- 모바일 앱처럼 보이게 하는 웹앱(PWA) 메타 태그 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#222222">
+    
+    <title>ToDoTchi - 나의 하루가 너의 인생이 돼</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/galmuri@latest/dist/galmuri.css" rel="stylesheet">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        :root {
+            --lcd-bg: #8fa07d;
+            --lcd-pixel: #2c3524;
+            --device-bg: #e5e5e5;
+        }
+        
+        * { 
+            box-sizing: border-box; 
+            font-family: 'Galmuri11', 'Courier New', monospace; 
+            user-select: none;
+            /* 터치할 때 파란색 박스 생기는 것 방지 */
+            -webkit-tap-highlight-color: transparent; 
+        }
+        
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background-color: #222; display: flex; justify-content: center; align-items: center; 
+            /* 모바일 당겨서 새로고침 방지 */
+            overscroll-behavior-y: none; 
+        }
+        
+        #root { 
+            width: 100%; max-width: 420px; height: 100%; max-height: 850px; 
+            background-color: var(--device-bg); 
+            display: flex; flex-direction: column; position: relative; overflow: hidden;
+            border: 12px solid #222; border-radius: 30px;
+        }
+
+        /* 📱 스마트폰 화면 크기일 때 베젤(테두리) 제거하고 꽉 채우기 */
+        @media (max-width: 450px) {
+            #root {
+                border: none;
+                border-radius: 0;
+                max-width: 100%;
+                max-height: 100%;
+            }
+        }
+
+        .screen-bezel {
+            flex: 1; background: #555; margin: 15px; padding: 15px; border-radius: 15px;
+            box-shadow: inset 3px 3px 15px rgba(0,0,0,0.8);
+            display: flex; flex-direction: column;
+            /* 스마트폰 하단 스와이프 바(홈버튼 영역) 확보 */
+            padding-bottom: env(safe-area-inset-bottom, 15px);
+        }
+
+        .lcd-screen {
+            flex: 1; background-color: var(--lcd-bg); color: var(--lcd-pixel);
+            border: 3px solid #111; overflow: hidden; display: flex; flex-direction: column;
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .panel { padding: 12px; border-bottom: 2px dashed var(--lcd-pixel); }
+        .panel:last-child { border-bottom: none; }
+
+        .btn { 
+            background: transparent; border: 2px solid var(--lcd-pixel); 
+            color: var(--lcd-pixel); padding: 12px 10px; font-size: 14px; font-weight: bold; 
+            cursor: pointer; font-family: inherit; margin: 2px;
+            /* 터치 영역 확보를 위해 버튼을 약간 키움 */
+            min-height: 44px;
+        }
+        .btn:active { background: var(--lcd-pixel); color: var(--lcd-bg); }
+
+        .header { 
+            border-bottom: 3px solid var(--lcd-pixel); padding: 8px; 
+            text-align: center; font-size: 16px; font-weight: bold; 
+            background: var(--lcd-pixel); color: var(--lcd-bg);
+        }
+
+        /* 스크롤바 숨기기 (앱 느낌 강조) */
+        .scroll-area { 
+            flex: 1; overflow-y: auto; padding-bottom: 60px; 
+            scrollbar-width: none; /* Firefox */
+        }
+        .scroll-area::-webkit-scrollbar { display: none; /* Chrome, Safari */ }
+        
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+        .animate-bounce { animation: bounce 0.3s steps(2) infinite; }
+
+        .stat-bar-bg { border: 2px solid var(--lcd-pixel); height: 16px; width: 100%; padding: 1px; }
+        .stat-bar-fill { height: 100%; background: var(--lcd-pixel); transition: width 0.3s steps(10); }
+        
+        input, select { 
+            width: 100%; padding: 10px; border: 2px solid var(--lcd-pixel); 
+            background: var(--lcd-bg); color: var(--lcd-pixel); font-family: inherit; 
+            margin-bottom: 8px; outline: none;
+            /* 아이폰(iOS) 폼 포커스 시 자동 줌인 방지를 위해 폰트 16px 이상 강제 */
+            font-size: 16px; 
+            border-radius: 0;
+        }
+        
+        .nav-bar { 
+            display: flex; border-top: 3px solid var(--lcd-pixel); background: var(--lcd-bg);
+        }
+        .nav-item { 
+            flex: 1; text-align: center; padding: 15px 0; border-right: 2px solid var(--lcd-pixel);
+            font-size: 13px; cursor: pointer; font-weight: bold;
+        }
+        .nav-item:last-child { border-right: none; }
+        .nav-item.active { background: var(--lcd-pixel); color: var(--lcd-bg); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const MAX_DAYS = 30;
+
+        // 📳 진동(햅틱) 피드백 함수 (지원하는 기기만 동작)
+        const vibrate = (ms = 50) => {
+            if (navigator.vibrate) navigator.vibrate(ms);
+        };
+
+        const CATEGORIES = {
+            '공부': { int: 2, dil: 1 },
+            '운동': { str: 2, dil: 1 },
+            '취미': { emo: 2, hap: 2 },
+            '사교': { soc: 2, hap: 2 },
+            '생활': { life: 2, dil: 1 },
+            '업무': { dil: 2, int: 1 },
+            '휴식': { hap: 3, str: 1 },
+        };
+
+        const ENDINGS = [
+            { id: 'e_perfect', name: '완벽한 인생', desc: '모든 것을 이룬 전설의 캐릭터.', condition: s => Object.values(s).every(v => v >= 80) },
+            { id: 'e_sage', name: '현자', desc: '세상의 이치를 깨달았습니다.', condition: s => s.int >= 85 && s.emo >= 70 && s.hap >= 70 },
+            { id: 'e_martial', name: '무림고수', desc: '속세를 떠나 무공을 연마했습니다.', condition: s => s.str >= 85 && s.dil >= 90 && s.soc < 30 },
+            { id: 'e_freak', name: '괴짜 천재', desc: '자기만의 세계에 빠진 천재.', condition: s => s.int >= 80 && s.emo >= 90 && s.soc < 30 },
+            { id: 'e_bed', name: '침대 껌딱지', desc: '침대 밖은 너무 위험해...', condition: s => s.dil < 20 && s.str < 30 },
+            { id: 'e_scroll', name: '도파민 중독', desc: '스마트폰을 놓지 못합니다.', condition: s => s.dil < 30 && s.hap < 40 },
+            { id: 'e_scholar', name: '위대한 학자', desc: '세상을 바꿀 논문을 발표했습니다.', condition: s => s.int >= 80 && s.dil >= 70 },
+            { id: 'e_athlete', name: '운동선수', desc: '최고의 피지컬을 완성했습니다!', condition: s => s.str >= 85 && s.dil >= 70 },
+            { id: 'e_artist', name: '예술가', desc: '아름다운 작품을 남깁니다.', condition: s => s.emo >= 85 && s.int >= 55 },
+            { id: 'e_happy', name: '행복한 사람', desc: '그저 행복하면 된 거 아닐까요?', condition: s => s.hap >= 90 },
+            { id: 'e_normal', name: '평범한 시민', desc: '오늘도 묵묵히 살아갑니다.', condition: () => true },
+        ];
+
+        const getEnding = (stats) => ENDINGS.find(e => e.condition(stats)) || ENDINGS[ENDINGS.length - 1];
+
+        // 🎨 100% 흑백 도트 렌더러
+        const RoomAndCharacter = ({ stats, day, isAnimating }) => {
+            const hasDesk = stats.int > 20;
+            const hasDumbbell = stats.str > 20;
+            const isClean = stats.life > 40;
+            const hasGlasses = stats.int > 40;
+            const isMuscular = stats.str > 40;
+            const hasRibbon = stats.emo > 40;
+            
+            const face = stats.hap > 70 ? 'happy' : stats.hap < 30 ? 'sad' : 'normal';
+            const charScale = day < 10 ? 1.5 : day < 20 ? 2 : 2.5;
+            const bg = "#8fa07d";
+            const px = "#2c3524";
+
+            return (
+                <div style={{ position: 'relative', width: '100%', height: '180px', borderBottom: `3px solid ${px}`, overflow: 'hidden' }}>
+                    <svg width="100%" height="100%" viewBox="0 0 64 64" preserveAspectRatio="none" style={{ shapeRendering: 'crispEdges' }}>
+                        <rect x="0" y="50" width="64" height="1" fill={px} />
+                        {!isClean && <rect x="10" y="55" width="2" height="1" fill={px} />}
+                        {!isClean && <rect x="50" y="52" width="1" height="1" fill={px} />}
+
+                        <g fill="none" stroke={px} strokeWidth="1">
+                            <rect x="5" y="5" width="16" height="16" />
+                            <rect x="5" y="13" width="16" height="1" fill={px} stroke="none" />
+                            <rect x="13" y="5" width="1" height="16" fill={px} stroke="none" />
+                        </g>
+
+                        {hasDesk && <g fill={px}>
+                            <rect x="44" y="36" width="16" height="1" />
+                            <rect x="46" y="37" width="2" height="13" />
+                            <rect x="56" y="37" width="2" height="13" />
+                            <rect x="48" y="33" width="6" height="3" fill="none" stroke={px} strokeWidth="1" />
+                        </g>}
+
+                        {hasDumbbell && <g fill={px}>
+                            <rect x="6" y="46" width="8" height="1" />
+                            <rect x="4" y="44" width="2" height="5" />
+                            <rect x="14" y="44" width="2" height="5" />
+                        </g>}
+                    </svg>
+
+                    <div className={isAnimating ? 'animate-bounce' : ''}
+                         style={{
+                             position: 'absolute', bottom: '14%', left: '50%',
+                             transform: `translateX(-50%) scale(${charScale})`, 
+                             transformOrigin: 'bottom center', width: '24px', height: '24px',
+                             imageRendering: 'pixelated'
+                         }}>
+                        <svg width="100%" height="100%" viewBox="0 0 24 24" style={{ shapeRendering: 'crispEdges' }}>
+                            <g fill={px}>
+                                <rect x="6" y="6" width="12" height="14" />
+                                <rect x="4" y="8" width="16" height="10" />
+                                
+                                {face === 'normal' && <g fill={bg}>
+                                    <rect x="8" y="10" width="2" height="4" />
+                                    <rect x="14" y="10" width="2" height="4" />
+                                </g>}
+                                {face === 'happy' && <g fill={bg}>
+                                    <rect x="7" y="10" width="3" height="2" />
+                                    <rect x="7" y="12" width="1" height="2" />
+                                    <rect x="14" y="10" width="3" height="2" />
+                                    <rect x="16" y="12" width="1" height="2" />
+                                </g>}
+                                {face === 'sad' && <g fill={bg}>
+                                    <rect x="7" y="12" width="3" height="2" />
+                                    <rect x="7" y="10" width="1" height="2" />
+                                    <rect x="14" y="12" width="3" height="2" />
+                                    <rect x="16" y="10" width="1" height="2" />
+                                </g>}
+
+                                {face === 'normal' && <rect x="10" y="16" width="4" height="1" fill={bg} />}
+                                {face === 'happy' && <rect x="10" y="15" width="4" height="3" fill={bg} />}
+                                {face === 'sad' && <rect x="11" y="17" width="2" height="2" fill={bg} />}
+
+                                <rect x="7" y="20" width="3" height="2" />
+                                <rect x="14" y="20" width="3" height="2" />
+
+                                {isMuscular && <g>
+                                    <rect x="1" y="10" width="3" height="5" />
+                                    <rect x="20" y="10" width="3" height="5" />
+                                </g>}
+                                {hasGlasses && <g fill={bg}>
+                                    <rect x="7" y="9" width="4" height="6" fill="none" stroke={px} strokeWidth="1" />
+                                    <rect x="13" y="9" width="4" height="6" fill="none" stroke={px} strokeWidth="1" />
+                                    <rect x="11" y="11" width="2" height="1" fill={px} />
+                                </g>}
+                                {hasRibbon && <g>
+                                    <rect x="16" y="2" width="3" height="3" />
+                                    <rect x="19" y="0" width="3" height="3" />
+                                    <rect x="19" y="4" width="3" height="3" />
+                                </g>}
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+            );
+        };
+
+        const ProgressBar = ({ label, value }) => (
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                <div style={{ width: '40px', fontSize: '13px' }}>{label}</div>
+                <div className="stat-bar-bg" style={{ flex: 1, marginLeft: '10px' }}>
+                    <div className="stat-bar-fill" style={{ width: `${Math.min(100, value)}%` }}></div>
+                </div>
+            </div>
+        );
+
+        const App = () => {
+            const [isFirstPlay, setIsFirstPlay] = useState(() => JSON.parse(localStorage.getItem('todotchi_first') || 'true'));
+            const [name, setName] = useState(() => localStorage.getItem('todotchi_name') || '');
+            const [day, setDay] = useState(() => parseInt(localStorage.getItem('todotchi_day') || '1'));
+            const [stats, setStats] = useState(() => JSON.parse(localStorage.getItem('todotchi_stats') || JSON.stringify({ int: 10, str: 10, emo: 10, soc: 10, life: 10, dil: 10, hap: 50 })));
+            const [todos, setTodos] = useState(() => JSON.parse(localStorage.getItem('todotchi_todos') || '[]'));
+            const [encyclopedia, setEncyclopedia] = useState(() => JSON.parse(localStorage.getItem('todotchi_ency') || '[]'));
+            
+            const [tab, setTab] = useState('home');
+            const [isAnimating, setIsAnimating] = useState(false);
+            const [newTodoTitle, setNewTodoTitle] = useState('');
+            const [newTodoCat, setNewTodoCat] = useState('공부');
+            const [showSummary, setShowSummary] = useState(false);
+            const [dailyGains, setDailyGains] = useState({});
+            const [ending, setEnding] = useState(null);
+
+            useEffect(() => {
+                localStorage.setItem('todotchi_first', JSON.stringify(isFirstPlay));
+                localStorage.setItem('todotchi_name', name);
+                localStorage.setItem('todotchi_day', day.toString());
+                localStorage.setItem('todotchi_stats', JSON.stringify(stats));
+                localStorage.setItem('todotchi_todos', JSON.stringify(todos));
+                localStorage.setItem('todotchi_ency', JSON.stringify(encyclopedia));
+            }, [isFirstPlay, name, day, stats, todos, encyclopedia]);
+
+            const handleNav = (newTab) => {
+                vibrate(30);
+                setTab(newTab);
+            };
+
+            const addTodo = () => {
+                if (!newTodoTitle.trim()) return;
+                vibrate(50);
+                setTodos([{ id: Date.now().toString(), title: newTodoTitle, category: newTodoCat, isDone: false }, ...todos]);
+                setNewTodoTitle('');
+            };
+
+            const completeTodo = (id) => {
+                vibrate([30, 50, 30]); // 성공 시 따닥! 하는 진동 패턴
+                setTodos(todos.map(t => {
+                    if (t.id === id && !t.isDone) {
+                        const gains = CATEGORIES[t.category];
+                        const newStats = { ...stats };
+                        const dGains = { ...dailyGains };
+                        
+                        Object.keys(gains).forEach(k => {
+                            newStats[k] = Math.min(100, newStats[k] + gains[k]);
+                            dGains[k] = (dGains[k] || 0) + gains[k];
+                        });
+                        
+                        setStats(newStats);
+                        setDailyGains(dGains);
+                        
+                        setIsAnimating(true);
+                        setTimeout(() => setIsAnimating(false), 600);
+                        return { ...t, isDone: true };
+                    }
+                    return t;
+                }));
+            };
+
+            const endDay = () => {
+                vibrate(50);
+                if (day >= MAX_DAYS) {
+                    const finalEnding = getEnding(stats);
+                    setEnding(finalEnding);
+                    setEncyclopedia([...encyclopedia, { ...finalEnding, date: new Date().toDateString(), stats }]);
+                } else {
+                    setShowSummary(true);
+                }
+            };
+
+            const resetGame = (hardReset = false) => {
+                vibrate([50, 100, 50]);
+                if (hardReset) setEncyclopedia([]);
+                setIsFirstPlay(true); setName(''); setDay(1);
+                setStats({ int: 10, str: 10, emo: 10, soc: 10, life: 10, dil: 10, hap: 50 });
+                setTodos([]); setDailyGains({}); setEnding(null); setTab('home');
+            };
+
+            if (isFirstPlay) {
+                return (
+                    <div className="screen-bezel"><div className="lcd-screen" style={{ justifyContent: 'center', padding: '20px', textAlign: 'center' }}>
+                        <h2>새 생명 탄생</h2>
+                        <p>이름을 입력하세요</p>
+                        <input value={name} onChange={e => setName(e.target.value)} maxLength={6} placeholder="이름 입력 (최대 6자)" />
+                        <button className="btn" onClick={() => { if(name.trim()) { vibrate(50); setIsFirstPlay(false); }}}>입력(A)</button>
+                    </div></div>
+                );
+            }
+
+            if (ending) {
+                return (
+                    <div className="screen-bezel"><div className="lcd-screen" style={{ justifyContent: 'center', padding: '20px', textAlign: 'center' }}>
+                        <h2>엔딩 달성!</h2>
+                        <h3 style={{ border: '2px solid', display: 'inline-block', padding: '8px' }}>{ending.name}</h3>
+                        <p>{ending.desc}</p>
+                        <button className="btn" style={{ marginTop: '20px' }} onClick={() => resetGame(false)}>새 시작(A)</button>
+                    </div></div>
+                );
+            }
+
+            if (showSummary) {
+                return (
+                    <div className="screen-bezel"><div className="lcd-screen" style={{ padding: '20px' }}>
+                        <h2 style={{ textAlign: 'center' }}>DAY {day} 결산</h2>
+                        <div className="panel" style={{ flex: 1 }}>
+                            {Object.entries(dailyGains).length === 0 ? <p style={{textAlign: 'center', marginTop: '40px'}}>성장 없음...</p> : 
+                                Object.entries(dailyGains).map(([key, val]) => (
+                                    <p key={key} style={{fontSize: '18px'}}>&gt; {key.toUpperCase()} +{val}</p>
+                                ))
+                            }
+                        </div>
+                        <button className="btn" style={{ width: '100%', marginTop: 'auto' }} onClick={() => {vibrate(50); setDay(day+1); setDailyGains({}); setShowSummary(false);}}>다음날(A)</button>
+                    </div></div>
+                );
+            }
+
+            return (
+                <div className="screen-bezel">
+                    <div className="lcd-screen">
+                        <div className="header">DAY {day} / {MAX_DAYS}</div>
+                        
+                        <div className="scroll-area">
+                            {tab === 'home' && (
+                                <>
+                                    <RoomAndCharacter stats={stats} day={day} isAnimating={isAnimating} />
+                                    <div className="panel">
+                                        <div style={{ textAlign: 'center', marginBottom: '15px' }}>[{name} 상태]</div>
+                                        <ProgressBar label="행복" value={stats.hap} />
+                                        <ProgressBar label="지능" value={stats.int} />
+                                        <ProgressBar label="체력" value={stats.str} />
+                                        <ProgressBar label="감성" value={stats.emo} />
+                                        <ProgressBar label="사교" value={stats.soc} />
+                                        <ProgressBar label="생활" value={stats.life} />
+                                        <ProgressBar label="성실" value={stats.dil} />
+                                    </div>
+                                </>
+                            )}
+
+                            {tab === 'todo' && (
+                                <div style={{ padding: '15px' }}>
+                                    <div className="panel" style={{ borderBottom: 'none', padding: '0 0 15px 0' }}>
+                                        <input placeholder="할 일 입력 (예: 독서 30분)" value={newTodoTitle} onChange={e => setNewTodoTitle(e.target.value)} enterKeyHint="done" />
+                                        <div style={{ display: 'flex', gap: '5px' }}>
+                                            <select value={newTodoCat} onChange={e => setNewTodoCat(e.target.value)} style={{ flex: 2, marginBottom: 0 }}>
+                                                {Object.keys(CATEGORIES).map(c => <option key={c} value={c}>{c}</option>)}
+                                            </select>
+                                            <button className="btn" style={{ flex: 1, margin: 0 }} onClick={addTodo}>추가</button>
+                                        </div>
+                                    </div>
+                                    <div style={{ borderTop: '2px solid var(--lcd-pixel)', paddingTop: '10px' }}>
+                                        {todos.map(t => (
+                                            <div key={t.id} className="panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 5px' }}>
+                                                <div style={{ textDecoration: t.isDone ? 'line-through' : 'none', opacity: t.isDone ? 0.5 : 1 }}>
+                                                    <span style={{ fontSize: '11px', display: 'block', marginBottom: '4px' }}>[{t.category}]</span>
+                                                    <span style={{ fontSize: '14px', lineHeight: '1.2' }}>{t.title}</span>
+                                                </div>
+                                                {!t.isDone && <button className="btn" style={{ padding: '8px 12px' }} onClick={() => completeTodo(t.id)}>O</button>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {tab === 'book' && (
+                                <div style={{ padding: '15px' }}>
+                                    <div style={{ textAlign: 'center', marginBottom: '15px' }}>엔딩 도감 ({encyclopedia.length})</div>
+                                    {encyclopedia.map((e, i) => (
+                                        <div key={i} className="panel">
+                                            <strong style={{ fontSize: '15px' }}>{e.name}</strong><br/>
+                                            <span style={{ fontSize: '13px', marginTop: '5px', display: 'block' }}>{e.desc}</span>
+                                        </div>
+                                    ))}
+                                    {encyclopedia.length === 0 && <p style={{ textAlign: 'center', marginTop: '40px' }}>수집된 데이터가 없습니다.</p>}
+                                </div>
+                            )}
+
+                            {tab === 'setting' && (
+                                <div style={{ padding: '15px' }}>
+                                    <div className="panel" style={{ borderBottom: 'none' }}>
+                                        <h3 style={{ textAlign: 'center', marginBottom: '20px' }}>시스템 메뉴</h3>
+                                        <button className="btn" style={{ width: '100%', marginBottom: '15px' }} onClick={endDay}>하루 넘기기 (DEV)</button>
+                                        <button className="btn" style={{ width: '100%' }} onClick={() => { if(window.confirm('정말 초기화하시겠습니까?')) resetGame(true); }}>초기화 (RESET)</button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="nav-bar">
+                            <div className={`nav-item ${tab === 'home' ? 'active' : ''}`} onClick={() => handleNav('home')}>홈</div>
+                            <div className={`nav-item ${tab === 'todo' ? 'active' : ''}`} onClick={() => handleNav('todo')}>할일</div>
+                            <div className={`nav-item ${tab === 'book' ? 'active' : ''}`} onClick={() => handleNav('book')}>도감</div>
+                            <div className={`nav-item ${tab === 'setting' ? 'active' : ''}`} onClick={() => handleNav('setting')}>설정</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
