@@ -105,7 +105,6 @@
         const { useState, useEffect } = React;
         const MAX_DAYS = 30;
 
-        // [요청1] 스탯 영문 Key를 한글로 변환하기 위한 맵핑 객체
         const STAT_NAMES = {
             'int': '지능',
             'str': '체력',
@@ -204,7 +203,6 @@
 
         const getEnding = (stats) => ENDINGS.find(e => e.condition(stats)) || ENDINGS[ENDINGS.length - 1];
 
-        // [요청2] 결산 마무리 응원 메시지 생성기
         const getSummaryEncouragement = (penaltyAmt, gainsKeysLength) => {
             if (penaltyAmt > 0) {
                 return "조금 아쉬운 하루였지만, 내일은 더 잘할 수 있을 거예요.\n너무 자책하지 말고 푹 쉬고 다시 힘차게 시작해봐요!";
@@ -283,7 +281,6 @@
                             </g>}
                         </g>
 
-                        {/* 방 꾸미기 아이템 렌더링 */}
                         {roomItems.map((item, idx) => (
                             <text key={item.id} x={25 + idx * 12} y="48" fontSize="10" style={{userSelect:'none'}}>{item.icon}</text>
                         ))}
@@ -367,11 +364,12 @@
             );
         };
 
+        // [추가] 숫자 표시가 포함된 ProgressBar
         const ProgressBar = ({ label, value }) => (
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                <div style={{ width: '40px', fontSize: '13px' }}>{label}</div>
-                <div className="stat-bar-bg" style={{ flex: 1, marginLeft: '10px' }}>
-                    <div className="stat-bar-fill" style={{ width: `${Math.min(100, value)}%` }}></div>
+                <div style={{ width: '100px', fontSize: '12px' }}>{label} ({value}/100)</div>
+                <div className="stat-bar-bg" style={{ flex: 1, marginLeft: '5px' }}>
+                    <div className="stat-bar-fill" style={{ width: `${Math.min(100, Math.max(0, value))}%` }}></div>
                 </div>
             </div>
         );
@@ -405,7 +403,6 @@
             const [showSummary, setShowSummary] = useState(false);
             const [dailyGains, setDailyGains] = useState({});
             const [dailyRewards, setDailyRewards] = useState([]);
-            // [요청1] 결산에서 보여줄 개별 습관 기록 텍스트 저장용 State
             const [dailyHabitLogs, setDailyHabitLogs] = useState([]);
             const [penaltyAmt, setPenaltyAmt] = useState(0); 
             const [ending, setEnding] = useState(null);
@@ -477,7 +474,6 @@
                     const nextPassed = h.passedDays + 1;
                     const todayChecked = h.checkedToday;
 
-                    // [요청1] 당일 체크한 습관에 대한 디테일한 텍스트 기록
                     if (todayChecked) {
                         hLogs.push(`습관 '${h.title}' ${nextPassed}일차 완료 (성실+1)`);
                     }
@@ -729,7 +725,6 @@
                                 ))
                             }
                             
-                            {/* [요청1] 디테일한 습관 로그 출력 */}
                             {dailyHabitLogs.map((log, idx) => (
                                 <p key={`log-${idx}`} style={{fontSize: '13px', margin:'4px 0', color: 'var(--lcd-pixel)', paddingLeft:'10px'}}>
                                     ↳ {log}
@@ -754,7 +749,6 @@
                                 </div>
                             )}
 
-                            {/* [요청2] 결산 마무리 멘트 격려/응원 (2줄 이상) */}
                             <div style={{ marginTop: '25px', padding: '15px', border: '2px dashed var(--lcd-pixel)', borderRadius: '10px', fontSize: '13px', lineHeight: '1.6', textAlign: 'center', backgroundColor:'rgba(0,0,0,0.05)' }}>
                                 {getSummaryEncouragement(penaltyAmt, Object.keys(dailyGains).length).split('\n').map((line, i) => <span key={i}>{line}<br/></span>)}
                             </div>
