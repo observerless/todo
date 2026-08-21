@@ -28,44 +28,50 @@
         }
 
         * { box-sizing: border-box; font-family: 'Galmuri11', 'Courier New', monospace; user-select: none; -webkit-tap-highlight-color: transparent; }
+        
+        /* [요청3] 배경 및 테두리 제거 로직 (데스크탑은 중앙 배치 유지, 화면 꽉 채우기) */
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #222; display: flex; justify-content: center; align-items: center; overscroll-behavior-y: none; overflow: hidden; }
-        #root { width: 100%; max-width: 420px; height: 100%; max-height: 850px; background-color: var(--device-bg); display: flex; flex-direction: column; position: relative; overflow: hidden; border: 12px solid #222; border-radius: 30px; }
+        #root { width: 100%; max-width: 420px; height: 100%; max-height: 100%; background-color: transparent; display: flex; flex-direction: column; position: relative; overflow: hidden; border: none; border-radius: 0; }
         
-        @media (max-width: 450px) { #root { border: none; border-radius: 0; max-width: 100%; max-height: 100%; } }
+        @media (max-width: 450px) { #root { max-width: 100%; } }
 
-        .screen-bezel { flex: 1; background: #555; margin: 15px; padding: 15px; border-radius: 15px; box-shadow: inset 3px 3px 15px rgba(0,0,0,0.8); display: flex; flex-direction: column; padding-bottom: env(safe-area-inset-bottom, 15px); overflow: hidden; }
+        /* 회색 테두리, 여백 제거 */
+        .screen-bezel { flex: 1; background: var(--lcd-bg); margin: 0; padding: 0; border-radius: 0; box-shadow: none; display: flex; flex-direction: column; overflow: hidden; transition: background-color 2s; }
         
-        .lcd-screen { flex: 1; background-color: var(--lcd-bg); color: var(--lcd-pixel); border: 3px solid #111; overflow: hidden; display: flex; flex-direction: column; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3); position: relative; transition: background-color 2s, color 2s; }
+        /* LCD 화면 여백 제거 */
+        .lcd-screen { flex: 1; background-color: transparent; color: var(--lcd-pixel); border: none; overflow: hidden; display: flex; flex-direction: column; box-shadow: none; position: relative; transition: color 2s; }
         
         .panel { padding: 12px; border-bottom: 2px dashed var(--lcd-pixel); }
         .panel:last-child { border-bottom: none; }
-        .btn { background: transparent; border: 2px solid var(--lcd-pixel); color: var(--lcd-pixel); padding: 12px 10px; font-size: 14px; font-weight: bold; cursor: pointer; font-family: inherit; margin: 2px; min-height: 44px; }
+        .btn { background: transparent; border: 2px solid var(--lcd-pixel); color: var(--lcd-pixel); padding: 10px; font-size: 13px; font-weight: bold; cursor: pointer; font-family: inherit; margin: 2px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
         .btn:active { background: var(--lcd-pixel); color: var(--lcd-bg); }
         
-        .header { border-bottom: 3px solid var(--lcd-pixel); padding: 8px; text-align: center; font-size: 16px; font-weight: bold; background: var(--lcd-pixel); color: var(--lcd-bg); position: relative; z-index: 5; transition: background-color 2s, color 2s; }
-        .clock { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; }
+        /* [요청3] 상하단바 확대 */
+        .header { border-bottom: 4px solid var(--lcd-pixel); padding: 18px 8px; text-align: center; font-size: 18px; font-weight: bold; background: var(--lcd-pixel); color: var(--lcd-bg); position: relative; z-index: 5; transition: background-color 2s, color 2s; }
+        .clock { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); font-size: 13px; }
 
         .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-        .scrollable { flex: 1; overflow-y: auto; padding-bottom: 75px; scrollbar-width: none; }
+        .scrollable { flex: 1; overflow-y: auto; padding-bottom: 85px; scrollbar-width: none; }
         .scrollable::-webkit-scrollbar { display: none; }
         
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-        @keyframes tremble { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-2px); } }
+        @keyframes bounce { 0%, 100% { margin-bottom: 0; } 50% { margin-bottom: 10px; } }
+        @keyframes tremble { 0%, 100% { margin-left: 0; } 50% { margin-left: -4px; } }
         
         .animate-bounce { animation: bounce 0.3s steps(2) infinite; }
         .animate-tremble { animation: tremble 0.2s steps(2) infinite; }
 
-        .pixel-bubble { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); background: var(--lcd-bg); border: 2px solid var(--lcd-pixel); padding: 6px 10px; font-size: 12px; font-weight: bold; color: var(--lcd-pixel); white-space: nowrap; z-index: 10; transition: background-color 2s, color 2s, border-color 2s; }
+        .pixel-bubble { position: absolute; top: 15px; left: 50%; background: var(--lcd-bg); border: 2px solid var(--lcd-pixel); padding: 6px 10px; font-size: 12px; font-weight: bold; color: var(--lcd-pixel); white-space: nowrap; z-index: 10; transition: transform 2s ease-in-out, background-color 2s, color 2s, border-color 2s; }
         .pixel-bubble::after { content: ''; position: absolute; bottom: -6px; left: 50%; margin-left: -4px; border-width: 4px 4px 0; border-style: solid; border-color: var(--lcd-pixel) transparent transparent transparent; transition: border-color 2s; }
         .pixel-bubble::before { content: ''; position: absolute; bottom: -3px; left: 50%; margin-left: -4px; border-width: 4px 4px 0; border-style: solid; border-color: var(--lcd-bg) transparent transparent transparent; z-index: 1; transition: border-color 2s; }
 
         .stat-bar-bg { border: 2px solid var(--lcd-pixel); height: 16px; width: 100%; padding: 1px; }
         .stat-bar-fill { height: 100%; background: var(--lcd-pixel); transition: width 0.3s steps(10); }
         
-        input, select { width: 100%; padding: 10px; border: 2px solid var(--lcd-pixel); background: var(--lcd-bg); color: var(--lcd-pixel); font-family: inherit; margin-bottom: 8px; outline: none; font-size: 16px; border-radius: 0; }
+        input, select { width: 100%; padding: 12px 10px; border: 2px solid var(--lcd-pixel); background: var(--lcd-bg); color: var(--lcd-pixel); font-family: inherit; margin-bottom: 8px; outline: none; font-size: 15px; border-radius: 0; }
         
-        .nav-bar { display: flex; border-top: 3px solid var(--lcd-pixel); background: var(--lcd-bg); position: absolute; bottom: 0; width: 100%; z-index: 10; transition: background-color 2s, border-color 2s; }
-        .nav-item { flex: 1; text-align: center; padding: 15px 0; border-right: 2px solid var(--lcd-pixel); font-size: 13px; cursor: pointer; font-weight: bold; transition: border-color 2s; }
+        /* [요청3] 상하단바 확대 */
+        .nav-bar { display: flex; border-top: 4px solid var(--lcd-pixel); background: var(--lcd-bg); position: absolute; bottom: 0; width: 100%; z-index: 10; transition: background-color 2s, border-color 2s; }
+        .nav-item { flex: 1; text-align: center; padding: 22px 0; border-right: 3px solid var(--lcd-pixel); font-size: 15px; cursor: pointer; font-weight: bold; transition: border-color 2s; }
         .nav-item:last-child { border-right: none; }
         .nav-item.active { background: var(--lcd-pixel); color: var(--lcd-bg); }
 
@@ -82,6 +88,14 @@
             scrollbar-width: none;
         }
         .ending-story::-webkit-scrollbar { display: none; }
+
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 100; display: flex; justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal-box {
+            background: var(--lcd-bg); border: 3px solid var(--lcd-pixel); padding: 20px; width: 100%; max-width: 340px; color: var(--lcd-pixel); box-shadow: 4px 4px 0px rgba(0,0,0,0.5); position: relative;
+        }
     </style>
 </head>
 <body>
@@ -90,6 +104,18 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
         const MAX_DAYS = 30;
+
+        // [요청1] 스탯 영문 Key를 한글로 변환하기 위한 맵핑 객체
+        const STAT_NAMES = {
+            'int': '지능',
+            'str': '체력',
+            'emo': '감성',
+            'soc': '사교',
+            'life': '생활',
+            'dil': '성실',
+            'hap': '행복',
+            '올스탯': '올스탯'
+        };
 
         let audioCtx = null;
         const playSound = (type) => {
@@ -153,89 +179,54 @@
             '휴식': { hap: 3, str: 1 },
         };
 
+        const ALL_ITEMS = [
+            { id: 'item_plant', name: '행운의 화분', type: 'room', icon: '🪴' },
+            { id: 'item_lamp', name: '레트로 스탠드', type: 'room', icon: '🏮' },
+            { id: 'item_rug', name: '픽셀 러그', type: 'room', icon: '🟧' },
+            { id: 'item_ribbon', name: '빨간 리본', type: 'char', icon: '🎀' },
+            { id: 'item_glasses', name: '멋쟁이 선글라스', type: 'char', icon: '🕶️' },
+            { id: 'item_crown', name: '황금 왕관', type: 'char', icon: '👑' },
+        ];
+
         const ENDINGS = [
-            { 
-                id: 'e_perfect', name: '완벽한 인생', 
-                desc: '모든 것을 이룬 전설의 캐릭터.', 
-                condition: s => Object.values(s).every(v => v >= 80),
-                story: "길고 긴 시간 동안 한순간도 나태해지지 않았습니다.\n매일 아침 일찍 일어나 공부하고, 운동하고, 사람들을 만나며 치열하게 살아왔죠.\n처음에는 그저 작은 알에 불과했던 당신이지만, 이제는 그 누구도 범접할 수 없는 '완벽함'의 상징이 되었습니다.\n\n세상 모든 사람들이 당신을 우러러보고 존경합니다.\n지능, 감성, 체력, 인간관계... 어느 하나 빠지는 것 없이 육각형의 꽉 찬 삶을 완성했습니다.\n어쩌면 시스템의 한계를 벗어난 첫 번째 존재일지도 모릅니다.\n이토록 완벽한 인생을 살아주셔서 감사합니다!"
-            },
-            { 
-                id: 'e_sage', name: '현자', 
-                desc: '세상의 이치를 깨달았습니다.', 
-                condition: s => s.int >= 85 && s.emo >= 70 && s.hap >= 70,
-                story: "머리가 무거워질 정도로 방대한 지식을 흡수했습니다.\n수많은 책을 읽고, 밤을 새워가며 논문을 쓰고 철학을 고민했죠.\n하지만 지식에만 매몰되지 않고, 따뜻한 감성과 여유를 잃지 않았습니다.\n\n이제 당신은 단순히 똑똑한 것을 넘어 세상의 이치와 섭리를 꿰뚫어보는 '현자'가 되었습니다.\n수많은 사람들이 당신에게 삶의 조언을 구하러 찾아옵니다.\n창밖을 바라보며 마시는 차 한 잔의 여유 속에서, 당신은 진정한 행복의 의미를 깨달았습니다."
-            },
-            { 
-                id: 'e_martial', name: '무림고수', 
-                desc: '속세를 떠나 무공을 연마했습니다.', 
-                condition: s => s.str >= 85 && s.dil >= 90 && s.soc < 30,
-                story: "사람들과 어울려 노는 시간마저 아까웠습니다.\n그 시간에 덤벨을 들고, 산을 뛰고, 땀을 흘리며 스스로의 육체를 단련하는 데에만 매진했죠.\n친구들의 연락도 무시한 채 오로지 강해지기 위한 수련을 거듭했습니다.\n\n그 결과, 당신의 육체는 한계를 초월하여 그 어떤 무기보다 강하고 단단해졌습니다.\n사람들은 당신을 기인이나 무림고수라 부르며 두려워하지만, 당신은 속세의 평가에 연연하지 않습니다.\n오늘도 깊은 산속에서 주먹을 쥐고 허공을 가를 뿐입니다."
-            },
-            { 
-                id: 'e_freak', name: '괴짜 천재', 
-                desc: '자기만의 세계에 빠진 천재.', 
-                condition: s => s.int >= 80 && s.emo >= 90 && s.soc < 30,
-                story: "인간관계는 피곤하고 무의미하다고 느꼈습니다.\n방문 앞을 굳게 걸어 잠그고, 당신의 머릿속에 떠오르는 영감과 연구에만 집착했습니다.\n이해할 수 없는 공식을 벽에 휘갈기고, 알 수 없는 기계들을 분해하고 조립했죠.\n\n세상은 당신을 이해하지 못했고, 친구들은 떠나갔습니다.\n하지만 당신은 신경 쓰지 않습니다. 남들이 보지 못하는 우주의 진리를 당신만이 보고 있으니까요.\n외롭지만 빛나는 고독 속에서, 당신은 역사에 기록될 미친 천재가 되었습니다."
-            },
-            { 
-                id: 'e_bed', name: '침대 껌딱지', 
-                desc: '침대 밖은 너무 위험해...', 
-                condition: s => s.dil < 20 && s.str < 30,
-                story: "할 일? 귀찮아. 운동? 피곤해.\n당신에게 가장 완벽한 피난처는 바로 포근한 이불 속이었습니다.\n햇빛이 들어오는 것도 싫어 창문을 굳게 닫고, 하루 종일 뒹굴거리며 시간을 보냈죠.\n\n이제 당신의 근육은 거의 녹아내려 걷기조차 쉽지 않습니다.\n하지만 무슨 상관인가요? 침대 위에서 넷플릭스를 보고 배달 음식을 시켜 먹는 지금 이 순간이 가장 평화로운걸요.\n세상이 어떻게 변하든, 당신은 영원히 이불과 한 몸이 되기로 결심했습니다."
-            },
-            { 
-                id: 'e_scroll', name: '도파민 중독', 
-                desc: '스마트폰을 놓지 못합니다.', 
-                condition: s => s.dil < 30 && s.hap < 40,
-                story: "알림음이 울리지 않으면 불안해지기 시작했습니다.\n해야 할 일은 태산인데, 손가락은 계속해서 쇼츠와 릴스를 아래로 넘기고 있었죠.\n1분짜리 자극적인 영상들이 끝없이 이어지며 당신의 뇌를 점령했습니다.\n\n이제 긴 글을 읽거나 무언가에 집중하는 것은 불가능해졌습니다.\n도파민이 채워질 때만 잠깐 기분이 좋아졌다가, 금세 우울하고 무기력해지는 날들의 반복.\n당신은 디지털 세계의 미로 속에 갇힌 도파민의 노예로 전락하고 말았습니다."
-            },
-            { 
-                id: 'e_scholar', name: '위대한 학자', 
-                desc: '세상을 바꿀 논문을 발표했습니다.', 
-                condition: s => s.int >= 80 && s.dil >= 70,
-                story: "어릴 적부터 당신의 손에는 항상 책이 들려 있었습니다.\n남들이 놀러 다닐 때도 묵묵히 책상에 앉아 활자와 수식의 바다를 탐험했죠.\n꾸준한 성실함과 비상한 지능이 결합하여 당신의 두뇌는 완벽한 도서관이 되었습니다.\n\n마침내 당신은 세상의 난제를 해결할 엄청난 논문을 발표했습니다!\n뉴스 속보에 당신의 이름이 도배되고, 노벨상 위원회에서 전화가 걸려오기 시작했습니다.\n학문이라는 끝없는 산맥의 가장 높은 꼭대기에 당신의 깃발이 꽂혔습니다."
-            },
-            { 
-                id: 'e_athlete', name: '운동선수', 
-                desc: '최고의 피지컬을 완성했습니다!', 
-                condition: s => s.str >= 85 && s.dil >= 70,
-                story: "근육은 거짓말을 하지 않는다.\n이것이 당신의 유일한 삶의 신조였습니다.\n근육통이 찾아올 때마다 희열을 느꼈고, 닭가슴살과 프로틴은 당신의 주식이 되었습니다.\n\n비가 오나 눈이 오나 루틴을 거르지 않고 운동을 계속한 결과...\n당신의 몸은 그리스 조각상처럼 완벽하고 아름다운 근육으로 뒤덮였습니다.\n국가대표로 발탁되어 올림픽 무대에 선 당신의 등장은 전 세계 스포츠 팬들을 열광시키기에 충분했습니다."
-            },
-            { 
-                id: 'e_artist', name: '예술가', 
-                desc: '아름다운 작품을 남깁니다.', 
-                condition: s => s.emo >= 85 && s.int >= 55,
-                story: "당신의 눈에 비친 세상은 그저 평범한 일상이 아니었습니다.\n떨어지는 낙엽 하나, 스쳐가는 바람 소리 하나에도 깊은 영감을 받고 눈물을 흘렸죠.\n넘쳐흐르는 감성을 붓과 펜, 그리고 멜로디에 담아내기 시작했습니다.\n\n처음엔 당신을 이상하게 보던 사람들도, 당신이 만들어낸 압도적인 예술 작품 앞에서는 모두 숨을 죽이고 감동을 받았습니다.\n이제 당신의 그림과 음악은 시대를 넘어 후세에 영원히 기억될 아름다운 마스터피스가 되었습니다."
-            },
-            { 
-                id: 'e_happy', name: '행복한 사람', 
-                desc: '그저 행복하면 된 거 아닐까요?', 
-                condition: s => s.hap >= 90,
-                story: "돈이 많지 않아도, 남들보다 똑똑하지 않아도 괜찮았습니다.\n맛있는 밥을 먹고, 따뜻한 물로 샤워를 하고, 푹 자고 일어나는 일상.\n소소하지만 확실한 행복을 쫓으며 스트레스 없는 하루하루를 보냈습니다.\n\n세상은 성공해야만 한다고 외치지만, 당신의 얼굴엔 언제나 구김살 없는 환한 웃음이 가득합니다.\n당신의 긍정적인 에너지는 주변 사람들마저 기분 좋게 물들입니다.\n치열한 경쟁 없이 평화롭게 살아가는 당신이 어쩌면 진정한 인생의 승리자일지도 모릅니다."
-            },
-            { 
-                id: 'e_normal', name: '평범한 시민', 
-                desc: '오늘도 묵묵히 살아갑니다.', 
-                condition: () => true,
-                story: "크게 사고 치지도 않았고, 그렇다고 역사에 남을 만한 업적을 세우지도 않았습니다.\n적당히 일하고, 적당히 쉬고, 가끔 지각도 하며 남들 사는 만큼 평범하게 30일을 보냈습니다.\n\n아침 지옥철에 몸을 싣고, 퇴근 후엔 캔맥주 하나로 하루의 피로를 씻어냅니다.\n눈에 띄지 않는 아주 평범한 시민 1. \n하지만 세상은 당신같이 묵묵히 자신의 톱니바퀴를 돌리는 평범한 사람들 덕분에 오늘도 무사히 굴러가고 있습니다.\n수고 많으셨습니다. 내일도 출근하셔야죠?"
-            },
+            { id: 'e_perfect', name: '완벽한 인생', desc: '모든 것을 이룬 전설의 캐릭터.', condition: s => Object.values(s).every(v => v >= 80), story: "길고 긴 시간 동안 한순간도 나태해지지 않았습니다.\n매일 아침 일찍 일어나 공부하고, 운동하고, 사람들을 만나며 치열하게 살아왔죠.\n처음에는 그저 작은 알에 불과했던 당신이지만, 이제는 그 누구도 범접할 수 없는 '완벽함'의 상징이 되었습니다.\n\n세상 모든 사람들이 당신을 우러러보고 존경합니다.\n지능, 감성, 체력, 인간관계... 어느 하나 빠지는 것 없이 육각형의 꽉 찬 삶을 완성했습니다.\n어쩌면 시스템의 한계를 벗어난 첫 번째 존재일지도 모릅니다.\n이토록 완벽한 인생을 살아주셔서 감사합니다!" },
+            { id: 'e_sage', name: '현자', desc: '세상의 이치를 깨달았습니다.', condition: s => s.int >= 85 && s.emo >= 70 && s.hap >= 70, story: "머리가 무거워질 정도로 방대한 지식을 흡수했습니다.\n수많은 책을 읽고, 밤을 새워가며 논문을 쓰고 철학을 고민했죠.\n하지만 지식에만 매몰되지 않고, 따뜻한 감성과 여유를 잃지 않았습니다.\n\n이제 당신은 단순히 똑똑한 것을 넘어 세상의 이치와 섭리를 꿰뚫어보는 '현자'가 되었습니다.\n수많은 사람들이 당신에게 삶의 조언을 구하러 찾아옵니다.\n창밖을 바라보며 마시는 차 한 잔의 여유 속에서, 당신은 진정한 행복의 의미를 깨달았습니다." },
+            { id: 'e_martial', name: '무림고수', desc: '속세를 떠나 무공을 연마했습니다.', condition: s => s.str >= 85 && s.dil >= 90 && s.soc < 30, story: "사람들과 어울려 노는 시간마저 아까웠습니다.\n그 시간에 덤벨을 들고, 산을 뛰고, 땀을 흘리며 스스로의 육체를 단련하는 데에만 매진했죠.\n친구들의 연락도 무시한 채 오로지 강해지기 위한 수련을 거듭했습니다.\n\n그 결과, 당신의 육체는 한계를 초월하여 그 어떤 무기보다 강하고 단단해졌습니다.\n사람들은 당신을 기인이나 무림고수라 부르며 두려워하지만, 당신은 속세의 평가에 연연하지 않습니다.\n오늘도 깊은 산속에서 주먹을 쥐고 허공을 가를 뿐입니다." },
+            { id: 'e_freak', name: '괴짜 천재', desc: '자기만의 세계에 빠진 천재.', condition: s => s.int >= 80 && s.emo >= 90 && s.soc < 30, story: "인간관계는 피곤하고 무의미하다고 느꼈습니다.\n방문 앞을 굳게 걸어 잠그고, 당신의 머릿속에 떠오르는 영감과 연구에만 집착했습니다.\n이해할 수 없는 공식을 벽에 휘갈기고, 알 수 없는 기계들을 분해하고 조립했죠.\n\n세상은 당신을 이해하지 못했고, 친구들은 떠나갔습니다.\n하지만 당신은 신경 쓰지 않습니다. 남들이 보지 못하는 우주의 진리를 당신만이 보고 있으니까요.\n외롭지만 빛나는 고독 속에서, 당신은 역사에 기록될 미친 천재가 되었습니다." },
+            { id: 'e_bed', name: '침대 껌딱지', desc: '침대 밖은 너무 위험해...', condition: s => s.dil < 20 && s.str < 30, story: "할 일? 귀찮아. 운동? 피곤해.\n당신에게 가장 완벽한 피난처는 바로 포근한 이불 속이었습니다.\n햇빛이 들어오는 것도 싫어 창문을 굳게 닫고, 하루 종일 뒹굴거리며 시간을 보냈죠.\n\n이제 당신의 근육은 거의 녹아내려 걷기조차 쉽지 않습니다.\n하지만 무슨 상관인가요? 침대 위에서 넷플릭스를 보고 배달 음식을 시켜 먹는 지금 이 순간이 가장 평화로운걸요.\n세상이 어떻게 변하든, 당신은 영원히 이불과 한 몸이 되기로 결심했습니다." },
+            { id: 'e_scroll', name: '도파민 중독', desc: '스마트폰을 놓지 못합니다.', condition: s => s.dil < 30 && s.hap < 40, story: "알림음이 울리지 않으면 불안해지기 시작했습니다.\n해야 할 일은 태산인데, 손가락은 계속해서 쇼츠와 릴스를 아래로 넘기고 있었죠.\n1분짜리 자극적인 영상들이 끝없이 이어지며 당신의 뇌를 점령했습니다.\n\n이제 긴 글을 읽거나 무언가에 집중하는 것은 불가능해졌습니다.\n도파민이 채워질 때만 잠깐 기분이 좋아졌다가, 금세 우울하고 무기력해지는 날들의 반복.\n당신은 디지털 세계의 미로 속에 갇힌 도파민의 노예로 전락하고 말았습니다." },
+            { id: 'e_scholar', name: '위대한 학자', desc: '세상을 바꿀 논문을 발표했습니다.', condition: s => s.int >= 80 && s.dil >= 70, story: "어릴 적부터 당신의 손에는 항상 책이 들려 있었습니다.\n남들이 놀러 다닐 때도 묵묵히 책상에 앉아 활자와 수식의 바다를 탐험했죠.\n꾸준한 성실함과 비상한 지능이 결합하여 당신의 두뇌는 완벽한 도서관이 되었습니다.\n\n마침내 당신은 세상의 난제를 해결할 엄청난 논문을 발표했습니다!\n뉴스 속보에 당신의 이름이 도배되고, 노벨상 위원회에서 전화가 걸려오기 시작했습니다.\n학문이라는 끝없는 산맥의 가장 높은 꼭대기에 당신의 깃발이 꽂혔습니다." },
+            { id: 'e_athlete', name: '운동선수', desc: '최고의 피지컬을 완성했습니다!', condition: s => s.str >= 85 && s.dil >= 70, story: "근육은 거짓말을 하지 않는다.\n이것이 당신의 유일한 삶의 신조였습니다.\n근육통이 찾아올 때마다 희열을 느꼈고, 닭가슴살과 프로틴은 당신의 주식이 되었습니다.\n\n비가 오나 눈이 오나 루틴을 거르지 않고 운동을 계속한 결과...\n당신의 몸은 그리스 조각상처럼 완벽하고 아름다운 근육으로 뒤덮였습니다.\n국가대표로 발탁되어 올림픽 무대에 선 당신의 등장은 전 세계 스포츠 팬들을 열광시키기에 충분했습니다." },
+            { id: 'e_artist', name: '예술가', desc: '아름다운 작품을 남깁니다.', condition: s => s.emo >= 85 && s.int >= 55, story: "당신의 눈에 비친 세상은 그저 평범한 일상이 아니었습니다.\n떨어지는 낙엽 하나, 스쳐가는 바람 소리 하나에도 깊은 영감을 받고 눈물을 흘렸죠.\n넘쳐흐르는 감성을 붓과 펜, 그리고 멜로디에 담아내기 시작했습니다.\n\n처음엔 당신을 이상하게 보던 사람들도, 당신이 만들어낸 압도적인 예술 작품 앞에서는 모두 숨을 죽이고 감동을 받았습니다.\n이제 당신의 그림과 음악은 시대를 넘어 후세에 영원히 기억될 아름다운 마스터피스가 되었습니다." },
+            { id: 'e_happy', name: '행복한 사람', desc: '그저 행복하면 된 거 아닐까요?', condition: s => s.hap >= 90, story: "돈이 많지 않아도, 남들보다 똑똑하지 않아도 괜찮았습니다.\n맛있는 밥을 먹고, 따뜻한 물로 샤워를 하고, 푹 자고 일어나는 일상.\n소소하지만 확실한 행복을 쫓으며 스트레스 없는 하루하루를 보냈습니다.\n\n세상은 성공해야만 한다고 외치지만, 당신의 얼굴엔 언제나 구김살 없는 환한 웃음이 가득합니다.\n당신의 긍정적인 에너지는 주변 사람들마저 기분 좋게 물들입니다.\n치열한 경쟁 없이 평화롭게 살아가는 당신이 어쩌면 진정한 인생의 승리자일지도 모릅니다." },
+            { id: 'e_normal', name: '평범한 시민', desc: '오늘도 묵묵히 살아갑니다.', condition: () => true, story: "크게 사고 치지도 않았고, 그렇다고 역사에 남을 만한 업적을 세우지도 않았습니다.\n적당히 일하고, 적당히 쉬고, 가끔 지각도 하며 남들 사는 만큼 평범하게 30일을 보냈습니다.\n\n아침 지옥철에 몸을 싣고, 퇴근 후엔 캔맥주 하나로 하루의 피로를 씻어냅니다.\n눈에 띄지 않는 아주 평범한 시민 1. \n하지만 세상은 당신같이 묵묵히 자신의 톱니바퀴를 돌리는 평범한 사람들 덕분에 오늘도 무사히 굴러가고 있습니다.\n수고 많으셨습니다. 내일도 출근하셔야죠?" },
         ];
 
         const getEnding = (stats) => ENDINGS.find(e => e.condition(stats)) || ENDINGS[ENDINGS.length - 1];
 
-        // 🎨 캐릭터 및 배경 렌더러 (엔딩 화면에서도 재사용하기 위함)
-        const RoomAndCharacter = ({ stats, day, isAnimating, action, speech, isNight }) => {
+        // [요청2] 결산 마무리 응원 메시지 생성기
+        const getSummaryEncouragement = (penaltyAmt, gainsKeysLength) => {
+            if (penaltyAmt > 0) {
+                return "조금 아쉬운 하루였지만, 내일은 더 잘할 수 있을 거예요.\n너무 자책하지 말고 푹 쉬고 다시 힘차게 시작해봐요!";
+            } else if (gainsKeysLength === 0) {
+                return "오늘은 푹 쉬어가는 하루였군요. 쉼도 정말 중요하죠.\n재충전한 에너지를 바탕으로 내일 다시 나아가길 응원할게요!";
+            } else {
+                return "오늘 하루도 계획한 일들을 해내느라 정말 고생 많으셨어요!\n열심히 달려온 당신의 하루하루가 모여 멋진 인생이 될 거예요.";
+            }
+        };
+
+        const RoomAndCharacter = ({ stats, day, isAnimating, action, speech, isNight, isSick, equippedItems }) => {
+            const [charPos, setCharPos] = useState(0);
+            const [isJumping, setIsJumping] = useState(false);
+
             const hasDesk = stats.int > 20;
             const hasDumbbell = stats.str > 20;
             const isClean = stats.life > 40;
-            const hasGlasses = stats.int > 40;
+            const hasGlasses = stats.int > 40 || equippedItems.some(i => i.id === 'item_glasses');
             const isMuscular = stats.str > 40;
-            const hasRibbon = stats.emo > 40;
+            const hasRibbon = stats.emo > 40 || equippedItems.some(i => i.id === 'item_ribbon');
             
-            // 3단계 성장 로직
             const stage = day <= 3 ? 'egg' : day <= 14 ? 'baby' : 'adult';
-            const isSick = stats.hap <= 20 || stats.str < 20;
 
             let face = stats.hap > 70 ? 'happy' : stats.hap < 30 ? 'sad' : 'normal';
             if (isSick) face = 'sad';
@@ -251,9 +242,28 @@
             const bg = isNight ? "#2c3524" : "#8fa07d";
             const px = isNight ? "#8fa07d" : "#2c3524";
 
+            useEffect(() => {
+                const moveInterval = setInterval(() => {
+                    if (Math.random() < 0.4) {
+                        const newPos = Math.floor(Math.random() * 121) - 60;
+                        setCharPos(newPos);
+                    }
+                }, 3000);
+                return () => clearInterval(moveInterval);
+            }, []);
+
+            const handleJump = () => {
+                if (isJumping) return;
+                setIsJumping(true);
+                setTimeout(() => setIsJumping(false), 300);
+            };
+
+            const roomItems = equippedItems.filter(i => i.type === 'room');
+            const hasCrown = equippedItems.some(i => i.id === 'item_crown');
+
             return (
-                <div style={{ position: 'relative', width: '100%', height: '180px', borderBottom: `3px solid ${px}`, overflow: 'hidden', flexShrink: 0 }}>
-                    {displaySpeech && <div className="pixel-bubble">{displaySpeech}</div>}
+                <div style={{ position: 'relative', width: '100%', height: '220px', borderBottom: `3px solid ${px}`, overflow: 'hidden', flexShrink: 0 }}>
+                    {displaySpeech && <div className="pixel-bubble" style={{ transform: `translateX(calc(-50% + ${charPos}px))` }}>{displaySpeech}</div>}
 
                     <svg width="100%" height="100%" viewBox="0 0 64 64" preserveAspectRatio="none" style={{ shapeRendering: 'crispEdges' }}>
                         <rect x="0" y="50" width="64" height="1" fill={px} />
@@ -273,6 +283,11 @@
                             </g>}
                         </g>
 
+                        {/* 방 꾸미기 아이템 렌더링 */}
+                        {roomItems.map((item, idx) => (
+                            <text key={item.id} x={25 + idx * 12} y="48" fontSize="10" style={{userSelect:'none'}}>{item.icon}</text>
+                        ))}
+
                         {isSick && <g fill={px}>
                             <rect x="45" y="10" width="8" height="2" />
                             <rect x="48" y="7" width="2" height="8" />
@@ -291,8 +306,16 @@
                         </g>}
                     </svg>
 
-                    <div className={isSick ? 'animate-tremble' : (isAnimating ? 'animate-bounce' : '')}
-                         style={{ position: 'absolute', bottom: '14%', left: '50%', transform: `translateX(-50%) scale(2.5)`, transformOrigin: 'bottom center', width: '24px', height: '24px', imageRendering: 'pixelated' }}>
+                    <div className={isJumping || isAnimating ? 'animate-bounce' : (isSick ? 'animate-tremble' : '')}
+                         onClick={handleJump}
+                         onTouchStart={handleJump}
+                         style={{ 
+                             position: 'absolute', bottom: '14%', left: '50%', 
+                             transform: `translateX(calc(-50% + ${charPos}px)) scale(3)`, 
+                             transition: 'transform 2s ease-in-out', 
+                             transformOrigin: 'bottom center', width: '24px', height: '24px', 
+                             imageRendering: 'pixelated', cursor: 'pointer' 
+                         }}>
                         <svg width="100%" height="100%" viewBox="0 0 24 24" style={{ shapeRendering: 'crispEdges' }}>
                             <g fill={px}>
                                 {stage === 'egg' && <g>
@@ -331,6 +354,7 @@
                                     {isMuscular && <g><rect x="1" y="10" width="3" height="5" /><rect x="20" y="10" width="3" height="5" /></g>}
                                     {hasGlasses && <g fill={bg}><rect x="7" y="9" width="4" height="6" fill="none" stroke={px} strokeWidth="1" /><rect x="13" y="9" width="4" height="6" fill="none" stroke={px} strokeWidth="1" /><rect x="11" y="11" width="2" height="1" fill={px} /></g>}
                                     {hasRibbon && <g><rect x="16" y="2" width="3" height="3" /><rect x="19" y="0" width="3" height="3" /><rect x="19" y="4" width="3" height="3" /></g>}
+                                    {hasCrown && <g><rect x="10" y="1" width="4" height="2" /><rect x="9" y="3" width="6" height="2" /></g>}
 
                                     {action === 'eat' && <g><rect x="18" y="16" width="6" height="3" fill={px} /><rect x="19" y="19" width="4" height="1" fill={px} /><rect x="19" y="15" width="4" height="1" fill={bg} /> <rect x="20" y="14" width="2" height="1" fill={bg} /> <rect x="21" y="13" width="1" height="5" fill={px} /> </g>}
                                     {action === 'study' && <g fill={px}><rect x="16" y="18" width="8" height="4" /><rect x="17" y="19" width="6" height="2" fill={bg} /><rect x="19" y="18" width="2" height="4" fill={px} /></g>}
@@ -358,8 +382,13 @@
             const [day, setDay] = useState(() => parseInt(localStorage.getItem('todotchi_day') || '1'));
             const [stats, setStats] = useState(() => JSON.parse(localStorage.getItem('todotchi_stats') || JSON.stringify({ int: 10, str: 10, emo: 10, soc: 10, life: 10, dil: 10, hap: 50 })));
             const [todos, setTodos] = useState(() => JSON.parse(localStorage.getItem('todotchi_todos') || '[]'));
+            const [habits, setHabits] = useState(() => JSON.parse(localStorage.getItem('todotchi_habits') || '[]'));
+            const [inventory, setInventory] = useState(() => JSON.parse(localStorage.getItem('todotchi_inv') || '[]'));
+            const [equippedItems, setEquippedItems] = useState(() => JSON.parse(localStorage.getItem('todotchi_equip') || '[]'));
             const [encyclopedia, setEncyclopedia] = useState(() => JSON.parse(localStorage.getItem('todotchi_ency') || '[]'));
             const [lastDate, setLastDate] = useState(() => localStorage.getItem('todotchi_last_date') || new Date().toDateString());
+            
+            const [isSick, setIsSick] = useState(() => JSON.parse(localStorage.getItem('todotchi_sick') || 'false'));
             
             const [tab, setTab] = useState('home');
             const [isAnimating, setIsAnimating] = useState(false);
@@ -368,8 +397,16 @@
             const [newTodoTitle, setNewTodoTitle] = useState('');
             const [newTodoCat, setNewTodoCat] = useState('공부');
             
+            const [showHabitModal, setShowHabitModal] = useState(false);
+            const [habitTitle, setHabitTitle] = useState('');
+            const [habitGoalDays, setHabitGoalDays] = useState(3);
+            const [habitCategory, setHabitCategory] = useState('공부');
+
             const [showSummary, setShowSummary] = useState(false);
             const [dailyGains, setDailyGains] = useState({});
+            const [dailyRewards, setDailyRewards] = useState([]);
+            // [요청1] 결산에서 보여줄 개별 습관 기록 텍스트 저장용 State
+            const [dailyHabitLogs, setDailyHabitLogs] = useState([]);
             const [penaltyAmt, setPenaltyAmt] = useState(0); 
             const [ending, setEnding] = useState(null);
             
@@ -379,7 +416,6 @@
             const isNight = currentHour >= 18 || currentHour < 6;
 
             const stage = day <= 3 ? 'egg' : day <= 14 ? 'baby' : 'adult';
-            const isSick = stats.hap <= 20 || stats.str < 20;
 
             useEffect(() => {
                 const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -388,7 +424,7 @@
 
             useEffect(() => {
                 if (tab === 'home' && !action) setSpeech(getSpeech(stage, isSick));
-            }, [tab, action, stage, isSick, currentTime]); 
+            }, [tab, action, stage, isSick]); 
 
             useEffect(() => {
                 localStorage.setItem('todotchi_first', JSON.stringify(isFirstPlay));
@@ -396,9 +432,13 @@
                 localStorage.setItem('todotchi_day', day.toString());
                 localStorage.setItem('todotchi_stats', JSON.stringify(stats));
                 localStorage.setItem('todotchi_todos', JSON.stringify(todos));
+                localStorage.setItem('todotchi_habits', JSON.stringify(habits));
+                localStorage.setItem('todotchi_inv', JSON.stringify(inventory));
+                localStorage.setItem('todotchi_equip', JSON.stringify(equippedItems));
                 localStorage.setItem('todotchi_ency', JSON.stringify(encyclopedia));
                 localStorage.setItem('todotchi_last_date', lastDate);
-            }, [isFirstPlay, name, day, stats, todos, encyclopedia, lastDate]);
+                localStorage.setItem('todotchi_sick', JSON.stringify(isSick));
+            }, [isFirstPlay, name, day, stats, todos, habits, inventory, equippedItems, encyclopedia, lastDate, isSick]);
 
             useEffect(() => {
                 const checkMidnight = () => {
@@ -406,19 +446,24 @@
                     if (lastDate !== todayStr) {
                         setLastDate(todayStr);
                         if (!isFirstPlay && !ending && day < MAX_DAYS) {
-                            calculatePenaltyAndShowSummary();
+                            processMidnightDayChange();
                         }
                     }
                 };
                 checkMidnight();
                 const timer = setInterval(checkMidnight, 60000);
                 return () => clearInterval(timer);
-            }, [lastDate, isFirstPlay, ending, day, todos, stats]);
+            }, [lastDate, isFirstPlay, ending, day, todos, stats, habits, dailyGains, inventory, equippedItems]);
 
-            const calculatePenaltyAndShowSummary = () => {
+            const processMidnightDayChange = () => {
                 const uncompleted = todos.filter(t => !t.isDone).length;
                 let penalty = uncompleted * 5; 
+                let gains = { ...dailyGains }; 
+                let rewards = [];
+                let hLogs = [];
                 
+                if (uncompleted >= 2) setIsSick(true);
+
                 if (penalty > 0) {
                     triggerFeedback('penalty');
                     setStats(prev => ({ ...prev, hap: Math.max(0, prev.hap - penalty) }));
@@ -426,8 +471,53 @@
                     triggerFeedback('success');
                 }
                 setPenaltyAmt(penalty);
+
+                let newHabits = [];
+                habits.forEach(h => {
+                    const nextPassed = h.passedDays + 1;
+                    const todayChecked = h.checkedToday;
+
+                    // [요청1] 당일 체크한 습관에 대한 디테일한 텍스트 기록
+                    if (todayChecked) {
+                        hLogs.push(`습관 '${h.title}' ${nextPassed}일차 완료 (성실+1)`);
+                    }
+
+                    if (nextPassed >= h.goalDays) {
+                        if (h.checkedCount >= Math.ceil(h.goalDays * 0.7)) { 
+                            triggerFeedback('success');
+                            setStats(prev => {
+                                let ns = { ...prev };
+                                Object.keys(ns).forEach(k => ns[k] = Math.min(100, ns[k] + 2));
+                                return ns;
+                            });
+                            gains['올스탯'] = (gains['올스탯'] || 0) + 2;
+
+                            const unowned = ALL_ITEMS.filter(item => !inventory.some(i => i.id === item.id) && !equippedItems.some(i => i.id === item.id));
+                            const rewardItem = unowned.length > 0 ? unowned[Math.floor(Math.random() * unowned.length)] : ALL_ITEMS[Math.floor(Math.random() * ALL_ITEMS.length)];
+                            
+                            if (!inventory.some(i => i.id === rewardItem.id) && !equippedItems.some(i => i.id === rewardItem.id)) {
+                                setInventory(inv => [...inv, rewardItem]);
+                            }
+                            rewards.push({ name: h.title, status: 'success', item: rewardItem });
+                        } else {
+                            rewards.push({ name: h.title, status: 'fail' });
+                        }
+                    } else {
+                        newHabits.push({
+                            ...h,
+                            passedDays: nextPassed,
+                            checkedCount: todayChecked ? h.checkedCount + 1 : h.checkedCount,
+                            checkedToday: false
+                        });
+                    }
+                });
+
+                setHabits(newHabits);
+                setDailyGains(gains);
+                setDailyRewards(rewards);
+                setDailyHabitLogs(hLogs);
                 setShowSummary(true);
-            }
+            };
 
             const handleNav = (newTab) => { triggerFeedback('click'); setTab(newTab); };
 
@@ -436,6 +526,52 @@
                 triggerFeedback('click');
                 setTodos([{ id: Date.now().toString(), title: newTodoTitle, category: newTodoCat, isDone: false }, ...todos]);
                 setNewTodoTitle('');
+            };
+
+            const addHabit = () => {
+                if (!habitTitle.trim()) return;
+                triggerFeedback('click');
+                const newH = {
+                    id: Date.now().toString(),
+                    title: habitTitle,
+                    goalDays: habitGoalDays,
+                    category: habitCategory,
+                    passedDays: 0,
+                    checkedCount: 0,
+                    checkedToday: false
+                };
+                setHabits([...habits, newH]);
+                setHabitTitle('');
+                setShowHabitModal(false);
+            };
+
+            const checkHabitToday = (id) => {
+                const habit = habits.find(h => h.id === id);
+                if (!habit || habit.checkedToday) return;
+
+                triggerFeedback('success');
+                
+                const newStats = { ...stats, dil: Math.min(100, stats.dil + 1) };
+                const dGains = { ...dailyGains, dil: (dailyGains.dil || 0) + 1 };
+                
+                setStats(newStats);
+                setDailyGains(dGains);
+
+                setHabits(habits.map(h => {
+                    if (h.id === id) {
+                        return { ...h, checkedCount: h.checkedCount + 1, checkedToday: true };
+                    }
+                    return h;
+                }));
+                
+                setIsAnimating(true);
+                setTimeout(() => setIsAnimating(false), 600);
+            };
+
+            const openRetryHabitModal = (habitName) => {
+                triggerFeedback('click');
+                setHabitTitle(habitName);
+                setShowHabitModal(true);
             };
 
             const completeTodo = (id) => {
@@ -447,9 +583,12 @@
                 let matchedAction = null;
 
                 const isHealing = cat === '휴식' || /약|병원|주사/.test(text);
+                let willHeal = false;
 
                 if (isHealing && isSick) {
                     matchedAction = 'heal';
+                    willHeal = true;
+                    setIsSick(false); 
                     triggerFeedback('success');
                 } else {
                     triggerFeedback('success');
@@ -471,17 +610,27 @@
                 
                 Object.keys(gains).forEach(k => {
                     let boost = gains[k];
-                    if (isHealing && isSick && k === 'hap') boost += 20; 
                     newStats[k] = Math.min(100, newStats[k] + boost);
                     dGains[k] = (dGains[k] || 0) + boost;
                 });
-                
+
                 setStats(newStats);
                 setDailyGains(dGains);
                 
                 setTodos(todos.map(t => t.id === id ? { ...t, isDone: true } : t));
                 setIsAnimating(true);
                 setTimeout(() => setIsAnimating(false), 600);
+            };
+
+            const toggleEquipItem = (item) => {
+                triggerFeedback('click');
+                if (equippedItems.some(i => i.id === item.id)) {
+                    setEquippedItems(equippedItems.filter(i => i.id !== item.id));
+                    setInventory([...inventory, item]);
+                } else {
+                    setInventory(inventory.filter(i => i.id !== item.id));
+                    setEquippedItems([...equippedItems, item]);
+                }
             };
 
             const triggerDevSkip = () => {
@@ -493,7 +642,7 @@
                         setEncyclopedia([...encyclopedia, { ...finalEnding, date: new Date().toDateString(), stats }]);
                     }
                 } else {
-                    calculatePenaltyAndShowSummary();
+                    processMidnightDayChange();
                 }
             };
 
@@ -508,6 +657,8 @@
                 } else {
                     setDay(day + 1);
                     setDailyGains({});
+                    setDailyRewards([]);
+                    setDailyHabitLogs([]);
                     setPenaltyAmt(0);
                     setTodos(prev => prev.filter(t => !t.isDone)); 
                 }
@@ -516,10 +667,15 @@
 
             const resetGame = (hardReset = false) => {
                 triggerFeedback('click');
-                if (hardReset) setEncyclopedia([]);
+                if (hardReset) {
+                    setEncyclopedia([]);
+                    setInventory([]);
+                    setEquippedItems([]);
+                }
                 setIsFirstPlay(true); setName(''); setDay(1);
+                setIsSick(false); 
                 setStats({ int: 10, str: 10, emo: 10, soc: 10, life: 10, dil: 10, hap: 50 });
-                setTodos([]); setDailyGains({}); setEnding(null); setTab('home'); setPenaltyAmt(0);
+                setTodos([]); setHabits([]); setDailyGains({}); setDailyRewards([]); setDailyHabitLogs([]); setEnding(null); setTab('home'); setPenaltyAmt(0);
                 setLastDate(new Date().toDateString());
             };
 
@@ -536,17 +692,15 @@
                 );
             }
 
-            // 🌟 엔딩 화면 렌더링 (캐릭터 모습 + 긴 스토리 추가)
             if (ending) {
                 return (
                     <div className={`screen-bezel ${themeClass}`}>
                         <div className="lcd-screen" style={{ padding: '0px', textAlign: 'center', display: 'flex', flexDirection: 'column' }}>
                             <div className="header" style={{ marginBottom: '0' }}>엔딩 달성! : {ending.name}</div>
                             
-                            {/* 엔딩 달성 시 캐릭터의 최종 모습을 상단에 고정 출력 */}
-                            <RoomAndCharacter stats={stats} day={30} isAnimating={false} action={null} speech={`...엔딩을 맞이했습니다!`} isNight={isNight} />
+                            <RoomAndCharacter stats={stats} day={30} isAnimating={false} action={null} speech={`...엔딩을 맞이했습니다!`} isNight={isNight} isSick={false} equippedItems={equippedItems} />
                             
-                            <div className="panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '10px' }}>
+                            <div className="panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '15px' }}>
                                 <h3 style={{ margin: '5px 0', borderBottom: '2px solid', paddingBottom: '5px' }}>{ending.desc}</h3>
                                 
                                 <div className="ending-story">
@@ -562,17 +716,51 @@
 
             if (showSummary) {
                 return (
-                    <div className={`screen-bezel ${themeClass}`}><div className="lcd-screen" style={{ padding: '20px' }}>
-                        <h2 style={{ textAlign: 'center' }}>DAY {day} 결산</h2>
-                        <div className="panel" style={{ flex: 1 }}>
-                            {Object.entries(dailyGains).length === 0 && penaltyAmt === 0 ? <p style={{textAlign: 'center', marginTop: '40px'}}>아무것도 안 한 하루...</p> : 
+                    <div className={`screen-bezel ${themeClass}`}><div className="lcd-screen" style={{ padding: '20px', display:'flex', flexDirection:'column' }}>
+                        <h2 style={{ textAlign: 'center', marginBottom:'15px' }}>DAY {day} 결산</h2>
+                        <div className="panel" style={{ flex: 1, overflowY:'auto', padding:'0' }}>
+                            
+                            <div style={{fontWeight:'bold', marginBottom:'10px', fontSize:'15px'}}>[당일 적립 스탯]</div>
+                            
+                            {Object.entries(dailyGains).length === 0 && penaltyAmt === 0 && dailyHabitLogs.length === 0 ? 
+                                <p style={{textAlign: 'center', marginTop: '15px'}}>아무것도 안 한 하루...</p> : 
                                 Object.entries(dailyGains).map(([key, val]) => (
-                                    <p key={key} style={{fontSize: '18px'}}>&gt; {key.toUpperCase()} +{val}</p>
+                                    <p key={key} style={{fontSize: '16px', margin:'6px 0', fontWeight:'bold'}}>&gt; {STAT_NAMES[key] || key} +{val}</p>
                                 ))
                             }
-                            {penaltyAmt > 0 && <p style={{fontSize: '18px', color: 'var(--lcd-pixel)', marginTop: '20px'}}>⚠️ 미완료 패널티!<br/>&gt; HAP -{penaltyAmt}</p>}
+                            
+                            {/* [요청1] 디테일한 습관 로그 출력 */}
+                            {dailyHabitLogs.map((log, idx) => (
+                                <p key={`log-${idx}`} style={{fontSize: '13px', margin:'4px 0', color: 'var(--lcd-pixel)', paddingLeft:'10px'}}>
+                                    ↳ {log}
+                                </p>
+                            ))}
+
+                            {penaltyAmt > 0 && <p style={{fontSize: '15px', color: 'var(--lcd-pixel)', marginTop: '15px', fontWeight:'bold'}}>⚠️ 미완료 패널티!<br/>&gt; 행복 -{penaltyAmt}</p>}
+
+                            {dailyRewards.length > 0 && (
+                                <div style={{marginTop:'20px', borderTop:'2px dashed var(--lcd-pixel)', paddingTop:'15px'}}>
+                                    <div style={{fontWeight:'bold', marginBottom:'10px', fontSize:'15px'}}>[습관 챌린지 결과]</div>
+                                    {dailyRewards.map((dr, idx) => (
+                                        <div key={idx} style={{fontSize:'14px', margin:'8px 0', lineHeight:'1.5'}}>
+                                            {dr.status === 'success' ? 
+                                                `🌟 '${dr.name}' 달성!\n(올스탯 +2 & 아이템 획득)` : 
+                                                <span>
+                                                    ❌ '{dr.name}' 실패... <button className="btn" style={{padding:'4px 8px', minHeight:'24px', marginLeft:'5px'}} onClick={() => openRetryHabitModal(dr.name)}>재도전?</button>
+                                                </span>
+                                            }
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* [요청2] 결산 마무리 멘트 격려/응원 (2줄 이상) */}
+                            <div style={{ marginTop: '25px', padding: '15px', border: '2px dashed var(--lcd-pixel)', borderRadius: '10px', fontSize: '13px', lineHeight: '1.6', textAlign: 'center', backgroundColor:'rgba(0,0,0,0.05)' }}>
+                                {getSummaryEncouragement(penaltyAmt, Object.keys(dailyGains).length).split('\n').map((line, i) => <span key={i}>{line}<br/></span>)}
+                            </div>
+
                         </div>
-                        <button className="btn" style={{ width: '100%', marginTop: 'auto' }} onClick={startNextDay}>다음날(A)</button>
+                        <button className="btn" style={{ width: '100%', marginTop: '15px' }} onClick={startNextDay}>다음날(A)</button>
                     </div></div>
                 );
             }
@@ -590,9 +778,9 @@
                         <div className="main-content">
                             {tab === 'home' && (
                                 <div className="scrollable">
-                                    <RoomAndCharacter stats={stats} day={day} isAnimating={isAnimating} action={action} speech={speech} isNight={isNight} />
-                                    <div className="panel" style={{ borderBottom: 'none' }}>
-                                        <div style={{ textAlign: 'center', marginBottom: '15px' }}>[{name} 상태]</div>
+                                    <RoomAndCharacter stats={stats} day={day} isAnimating={isAnimating} action={action} speech={speech} isNight={isNight} isSick={isSick} equippedItems={equippedItems} />
+                                    <div className="panel" style={{ borderBottom: 'none', padding: '20px 15px' }}>
+                                        <div style={{ textAlign: 'center', marginBottom: '15px', fontSize: '15px', fontWeight: 'bold' }}>[{name} 상태]</div>
                                         <ProgressBar label="행복" value={stats.hap} />
                                         <ProgressBar label="지능" value={stats.int} />
                                         <ProgressBar label="체력" value={stats.str} />
@@ -606,24 +794,45 @@
 
                             {tab === 'todo' && (
                                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                                    <div style={{ padding: '15px', flexShrink: 0, borderBottom: '3px solid var(--lcd-pixel)' }}>
-                                        <input placeholder="할 일 입력 (예: 밥 먹기)" value={newTodoTitle} onChange={e => setNewTodoTitle(e.target.value)} enterKeyHint="done" />
+                                    <div style={{ padding: '15px', flexShrink: 0, borderBottom: '4px solid var(--lcd-pixel)' }}>
+                                        <input placeholder="할 일 입력 (예: 약 먹기)" value={newTodoTitle} onChange={e => setNewTodoTitle(e.target.value)} enterKeyHint="done" />
                                         <div style={{ display: 'flex', gap: '5px' }}>
                                             <select value={newTodoCat} onChange={e => setNewTodoCat(e.target.value)} style={{ flex: 2, marginBottom: 0 }}>
                                                 {Object.keys(CATEGORIES).map(c => <option key={c} value={c}>{c}</option>)}
                                             </select>
-                                            <button className="btn" style={{ flex: 1, margin: 0 }} onClick={addTodo}>추가</button>
+                                            <button className="btn" style={{ flex: 1, margin: 0 }} onClick={addTodo}>할일 추가</button>
                                         </div>
+                                        <button className="btn" style={{ width: '100%', marginTop: '10px' }} onClick={() => { setHabitTitle(''); setShowHabitModal(true); }}>+ 새로운 습관 만들기</button>
                                     </div>
-                                    <div className="scrollable" style={{ padding: '10px 15px' }}>
-                                        {todos.length === 0 && <p style={{textAlign: 'center', marginTop: '20px'}}>오늘 할 일이 없습니다!</p>}
+
+                                    <div className="scrollable" style={{ padding: '15px' }}>
+                                        {habits.length > 0 && (
+                                            <div style={{marginBottom:'20px'}}>
+                                                <div style={{fontSize:'14px', fontWeight:'bold', marginBottom:'10px'}}>📌 진행 중인 습관</div>
+                                                {habits.map(h => (
+                                                    <div key={h.id} className="panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 8px', background:'rgba(0,0,0,0.05)', marginBottom:'8px' }}>
+                                                        <div>
+                                                            <span style={{ fontSize: '11px', display: 'block' }}>[{h.category}] {h.goalDays}일 챌린지</span>
+                                                            <span style={{ fontSize: '15px', fontWeight:'bold' }}>{h.title}</span>
+                                                            <span style={{ fontSize: '12px', display: 'block', marginTop:'4px' }}>진행: {h.passedDays}일째 (달성: {h.checkedCount}회)</span>
+                                                        </div>
+                                                        <button className="btn" style={{ padding: '8px 12px', opacity: h.checkedToday ? 0.5 : 1 }} disabled={h.checkedToday} onClick={() => checkHabitToday(h.id)}>
+                                                            {h.checkedToday ? '완료' : '체크'}
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        <div style={{fontSize:'14px', fontWeight:'bold', marginBottom:'10px'}}>📝 오늘 할 일</div>
+                                        {todos.length === 0 && <p style={{textAlign: 'center', margin: '15px 0', fontSize:'14px'}}>오늘 할 일이 없습니다!</p>}
                                         {todos.map(t => (
-                                            <div key={t.id} className="panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 5px' }}>
+                                            <div key={t.id} className="panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 8px', marginBottom:'8px' }}>
                                                 <div style={{ textDecoration: t.isDone ? 'line-through' : 'none', opacity: t.isDone ? 0.5 : 1 }}>
-                                                    <span style={{ fontSize: '11px', display: 'block', marginBottom: '4px' }}>[{t.category}]</span>
-                                                    <span style={{ fontSize: '14px', lineHeight: '1.2' }}>{t.title}</span>
+                                                    <span style={{ fontSize: '12px', display: 'block', marginBottom: '4px' }}>[{t.category}]</span>
+                                                    <span style={{ fontSize: '15px', lineHeight: '1.3' }}>{t.title}</span>
                                                 </div>
-                                                {!t.isDone && <button className="btn" style={{ padding: '8px 12px' }} onClick={() => completeTodo(t.id)}>O</button>}
+                                                {!t.isDone && <button className="btn" style={{ padding: '8px 14px' }} onClick={() => completeTodo(t.id)}>O</button>}
                                             </div>
                                         ))}
                                     </div>
@@ -632,27 +841,77 @@
 
                             {tab === 'book' && (
                                 <div className="scrollable" style={{ padding: '15px' }}>
-                                    <div style={{ textAlign: 'center', marginBottom: '15px' }}>엔딩 도감 ({encyclopedia.length})</div>
-                                    {encyclopedia.map((e, i) => (
-                                        <div key={i} className="panel">
-                                            <strong style={{ fontSize: '15px' }}>{e.name}</strong><br/>
-                                            <span style={{ fontSize: '13px', marginTop: '5px', display: 'block' }}>{e.desc}</span>
+                                    <div style={{ textAlign: 'center', marginBottom: '20px', fontWeight:'bold', fontSize:'16px' }}>인벤토리 및 도감</div>
+                                    
+                                    <div style={{marginBottom:'20px'}}>
+                                        <div style={{fontSize:'14px', fontWeight:'bold', marginBottom:'10px'}}>🎒 보유 아이템 (클릭하여 장착/해제)</div>
+                                        {inventory.length === 0 && equippedItems.length === 0 && <p style={{fontSize:'13px'}}>획득한 아이템이 없습니다.</p>}
+                                        
+                                        <div style={{display:'flex', flexWrap:'wrap', gap:'8px'}}>
+                                            {equippedItems.map(item => (
+                                                <button key={item.id} className="btn" style={{background:'var(--lcd-pixel)', color:'var(--lcd-bg)', fontSize:'13px', padding:'8px 12px'}} onClick={() => toggleEquipItem(item)}>
+                                                    {item.icon} {item.name} [장착중]
+                                                </button>
+                                            ))}
+                                            {inventory.map(item => (
+                                                <button key={item.id} className="btn" style={{fontSize:'13px', padding:'8px 12px'}} onClick={() => toggleEquipItem(item)}>
+                                                    {item.icon} {item.name}
+                                                </button>
+                                            ))}
                                         </div>
-                                    ))}
-                                    {encyclopedia.length === 0 && <p style={{ textAlign: 'center', marginTop: '40px' }}>수집된 데이터가 없습니다.</p>}
+                                    </div>
+
+                                    <div style={{borderTop:'4px dashed var(--lcd-pixel)', paddingTop:'20px'}}>
+                                        <div style={{ textAlign: 'center', marginBottom: '15px', fontWeight:'bold', fontSize:'15px' }}>엔딩 도감 ({encyclopedia.length})</div>
+                                        {encyclopedia.map((e, i) => (
+                                            <div key={i} className="panel" style={{padding:'15px 10px'}}>
+                                                <strong style={{ fontSize: '16px' }}>{e.name}</strong><br/>
+                                                <span style={{ fontSize: '14px', marginTop: '6px', display: 'block', lineHeight:'1.4' }}>{e.desc}</span>
+                                            </div>
+                                        ))}
+                                        {encyclopedia.length === 0 && <p style={{ textAlign: 'center', marginTop: '20px', fontSize:'14px' }}>수집된 엔딩이 없습니다.</p>}
+                                    </div>
                                 </div>
                             )}
 
                             {tab === 'setting' && (
-                                <div className="scrollable" style={{ padding: '15px' }}>
+                                <div className="scrollable" style={{ padding: '20px' }}>
                                     <div className="panel" style={{ borderBottom: 'none' }}>
-                                        <h3 style={{ textAlign: 'center', marginBottom: '20px' }}>시스템 메뉴</h3>
-                                        <button className="btn" style={{ width: '100%', marginBottom: '15px' }} onClick={triggerDevSkip}>하루 넘기기 (DEV)</button>
-                                        <button className="btn" style={{ width: '100%' }} onClick={() => { if(window.confirm('정말 초기화하시겠습니까?')) resetGame(true); }}>초기화 (RESET)</button>
+                                        <h3 style={{ textAlign: 'center', marginBottom: '25px', fontSize:'18px' }}>시스템 메뉴</h3>
+                                        <button className="btn" style={{ width: '100%', marginBottom: '15px', padding:'15px' }} onClick={triggerDevSkip}>하루 넘기기 (DEV)</button>
+                                        <button className="btn" style={{ width: '100%', padding:'15px' }} onClick={() => { if(window.confirm('정말 초기화하시겠습니까?')) resetGame(true); }}>초기화 (RESET)</button>
                                     </div>
                                 </div>
                             )}
                         </div>
+
+                        {showHabitModal && (
+                            <div className="modal-overlay">
+                                <div className="modal-box">
+                                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'15px', borderBottom:'3px solid var(--lcd-pixel)', paddingBottom:'10px'}}>
+                                        <strong style={{fontSize:'16px'}}>습관 챌린지 설정</strong>
+                                        <button className="btn" style={{padding:'4px 8px', minHeight:'auto'}} onClick={() => setShowHabitModal(false)}>X</button>
+                                    </div>
+                                    <div style={{fontSize:'14px', marginBottom:'8px'}}>습관 이름</div>
+                                    <input placeholder="예: 물 한 컵 마시기" value={habitTitle} onChange={e => setHabitTitle(e.target.value)} />
+                                    
+                                    <div style={{fontSize:'14px', marginBottom:'8px', marginTop:'10px'}}>챌린지 기간</div>
+                                    <select value={habitGoalDays} onChange={e => setHabitGoalDays(Number(e.target.value))}>
+                                        <option value={3}>3일 챌린지</option>
+                                        <option value={7}>7일 챌린지</option>
+                                        <option value={14}>14일 챌린지</option>
+                                        <option value={30}>30일 챌린지</option>
+                                    </select>
+
+                                    <div style={{fontSize:'14px', marginBottom:'8px', marginTop:'10px'}}>카테고리</div>
+                                    <select value={habitCategory} onChange={e => setHabitCategory(e.target.value)}>
+                                        {Object.keys(CATEGORIES).map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+
+                                    <button className="btn" style={{width:'100%', marginTop:'20px', padding:'12px', background:'var(--lcd-pixel)', color:'var(--lcd-bg)'}} onClick={addHabit}>습관 등록 및 시작</button>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="nav-bar">
                             <div className={`nav-item ${tab === 'home' ? 'active' : ''}`} onClick={() => handleNav('home')}>홈</div>
