@@ -14,108 +14,154 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        :root {
-            --device-bg: #e5e5e5;
-        }
-        /* 🌙 낮/밤 테마 CSS 변수 */
-        .theme-day {
-            --lcd-bg: #8fa07d;
-            --lcd-pixel: #2c3524;
-        }
-        .theme-night {
-            --lcd-bg: #2c3524;
-            --lcd-pixel: #8fa07d;
-        }
+        :root { --device-bg: #e5e5e5; }
+        /* 시간대별 테마 컬러 설정 */
+        .theme-dawn { --lcd-bg: #325a5f; --lcd-pixel: #54a3a1; } /* 새벽: 새벽빛 배경, 밝은 텍스트 */
+        .theme-morning { --lcd-bg: #8fa07d; --lcd-pixel: #3e4835; } /* 오전: 기존 초록, 기존 텍스트 */
+        .theme-afternoon { --lcd-bg: #899b7f; --lcd-pixel: #2e3c10; } /* 오후: 짙은 초록, 밝은 텍스트 */
+        .theme-night { --lcd-bg: #1f2d18; --lcd-pixel: #a1b590; } /* 밤: 더 짙은 초록, 밝은 텍스트 */
 
         * { box-sizing: border-box; font-family: 'Galmuri11', 'Courier New', monospace; user-select: none; -webkit-tap-highlight-color: transparent; }
-        
-        /* [요청3] 배경 및 테두리 제거 로직 (데스크탑은 중앙 배치 유지, 화면 꽉 채우기) */
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #222; display: flex; justify-content: center; align-items: center; overscroll-behavior-y: none; overflow: hidden; }
-        #root { width: 100%; max-width: 420px; height: 100%; max-height: 100%; background-color: transparent; display: flex; flex-direction: column; position: relative; overflow: hidden; border: none; border-radius: 0; }
-        
+        #root { width: 100%; max-width: 420px; height: 100%; max-height: 100%; display: flex; flex-direction: column; position: relative; overflow: hidden; }
         @media (max-width: 450px) { #root { max-width: 100%; } }
 
-        /* 회색 테두리, 여백 제거 */
-        .screen-bezel { flex: 1; background: var(--lcd-bg); margin: 0; padding: 0; border-radius: 0; box-shadow: none; display: flex; flex-direction: column; overflow: hidden; transition: background-color 2s; }
-        
-        /* LCD 화면 여백 제거 */
-        .lcd-screen { flex: 1; background-color: transparent; color: var(--lcd-pixel); border: none; overflow: hidden; display: flex; flex-direction: column; box-shadow: none; position: relative; transition: color 2s; }
+        .screen-bezel { flex: 1; background: var(--lcd-bg); display: flex; flex-direction: column; overflow: hidden; transition: background-color 1.5s; }
+        .lcd-screen { flex: 1; background-color: transparent; color: var(--lcd-pixel); display: flex; flex-direction: column; overflow: hidden; position: relative; transition: color 1.5s; }
         
         .panel { padding: 12px; border-bottom: 2px dashed var(--lcd-pixel); }
         .panel:last-child { border-bottom: none; }
-        .btn { background: transparent; border: 2px solid var(--lcd-pixel); color: var(--lcd-pixel); padding: 10px; font-size: 13px; font-weight: bold; cursor: pointer; font-family: inherit; margin: 2px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
-        .btn:active { background: var(--lcd-pixel); color: var(--lcd-bg); }
         
-        /* [요청3] 상하단바 확대 */
-        .header {  padding: 12px 8px; text-align: center; font-size: 16px; font-weight: bold; background: var(--lcd-pixel); color: var(--lcd-bg); position: relative; z-index: 5; transition: background-color 2s, color 2s; }
-        .clock { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); font-size: 13px; }
+        .btn { background: transparent; border: 2px solid var(--lcd-pixel); color: var(--lcd-pixel); padding: 10px; font-size: 13px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: 0.1s; border-radius: 4px; }
+        .btn:active { background: var(--lcd-pixel); color: var(--lcd-bg); }
+        .btn:disabled { opacity: 0.4; pointer-events: none; }
+        
+        .header { padding: 12px 8px; text-align: center; font-size: 14px; font-weight: bold; background: var(--lcd-pixel); color: var(--lcd-bg); position: relative; z-index: 5; display: flex; justify-content: space-between; align-items: center; transition: background-color 1.5s, color 1.5s; }
+        .header-stats { display: flex; gap: 10px; font-size: 12px; }
 
         .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-        .scrollable { flex: 1; overflow-y: auto; padding-bottom: 85px; scrollbar-width: none; }
+        .scrollable { flex: 1; overflow-y: auto; padding-bottom: 70px; scrollbar-width: none; }
         .scrollable::-webkit-scrollbar { display: none; }
         
-        @keyframes bounce { 0%, 100% { margin-bottom: 0; } 50% { margin-bottom: 10px; } }
+        @keyframes bounce { 0%, 100% { transform: translateY(0) scale(3); } 50% { transform: translateY(-10px) scale(3); } }
         @keyframes tremble { 0%, 100% { margin-left: 0; } 50% { margin-left: -4px; } }
+        @keyframes pop { 0% { transform: scale(0.5); opacity: 0; } 80% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); } }
         
         .animate-bounce { animation: bounce 0.3s steps(2) infinite; }
         .animate-tremble { animation: tremble 0.2s steps(2) infinite; }
+        .animate-pop { animation: pop 0.5s ease-out forwards; }
 
-        .pixel-bubble { position: absolute; top: 90px; left: 50%; background: var(--lcd-bg); border: 2px solid var(--lcd-pixel); padding: 6px 10px; font-size: 12px; font-weight: bold; color: var(--lcd-pixel); white-space: nowrap; z-index: 10; transition: transform 2s ease-in-out, background-color 2s, color 2s, border-color 2s; }
-        .pixel-bubble::after { content: ''; position: absolute; bottom: -6px; left: 50%; margin-left: -4px; border-width: 4px 4px 0; border-style: solid; border-color: var(--lcd-pixel) transparent transparent transparent; transition: border-color 2s; }
-        .pixel-bubble::before { content: ''; position: absolute; bottom: -3px; left: 50%; margin-left: -4px; border-width: 4px 4px 0; border-style: solid; border-color: var(--lcd-bg) transparent transparent transparent; z-index: 1; transition: border-color 2s; }
-
-        .stat-bar-bg { border: 2px solid var(--lcd-pixel); height: 16px; width: 100%; padding: 1px; }
-        .stat-bar-fill { height: 100%; background: var(--lcd-pixel); transition: width 0.3s steps(10); }
+        .pixel-bubble { position: absolute; top: 90px; left: 50%; background: var(--lcd-bg); border: 2px solid var(--lcd-pixel); padding: 6px 10px; font-size: 12px; font-weight: bold; color: var(--lcd-pixel); white-space: nowrap; z-index: 10; pointer-events: none; transition: transform 0.3s, background-color 1.5s, color 1.5s, border-color 1.5s; }
+        .pixel-bubble::after { content: ''; position: absolute; bottom: -6px; left: 50%; margin-left: -4px; border-width: 4px 4px 0; border-style: solid; border-color: var(--lcd-pixel) transparent transparent transparent; }
+        .pixel-bubble::before { content: ''; position: absolute; bottom: -3px; left: 50%; margin-left: -4px; border-width: 4px 4px 0; border-style: solid; border-color: var(--lcd-bg) transparent transparent transparent; z-index: 1; }
         
-        input, select { width: 100%; padding: 12px 10px; border: 2px solid var(--lcd-pixel); background: var(--lcd-bg); color: var(--lcd-pixel); font-family: inherit; margin-bottom: 8px; outline: none; font-size: 15px; border-radius: 0; }
+        input, select { width: 100%; padding: 12px 10px; border: 2px solid var(--lcd-pixel); background: var(--lcd-bg); color: var(--lcd-pixel); margin-bottom: 8px; outline: none; font-size: 15px; border-radius: 0; }
+        input[type="date"] { font-family: sans-serif; }
+        input:focus { background: var(--lcd-pixel); color: var(--lcd-bg); }
         
-        /* [요청3] 상하단바 확대 */
-        .nav-bar { display: flex; border-top: 3px solid var(--lcd-pixel); background: var(--lcd-bg); position: absolute; bottom: 0; width: 100%; z-index: 10; transition: background-color 2s, border-color 2s; }
-        .nav-item { flex: 1; text-align: center; padding: 18px 0; border-right: 3px solid var(--lcd-pixel); font-size: 15px; cursor: pointer; font-weight: bold; transition: border-color 2s; }
+        .nav-bar { display: flex; border-top: 3px solid var(--lcd-pixel); background: var(--lcd-bg); position: absolute; bottom: 0; width: 100%; z-index: 10; transition: background-color 1.5s, border-color 1.5s; }
+        .nav-item { flex: 1; text-align: center; padding: 18px 0; border-right: 3px solid var(--lcd-pixel); font-size: 14px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; }
         .nav-item:last-child { border-right: none; }
         .nav-item.active { background: var(--lcd-pixel); color: var(--lcd-bg); }
 
-        .ending-story {
-            font-size: 12px;
-            line-height: 1.6;
-            margin-top: 15px;
-            text-align: left;
-            padding: 10px;
-            border: 2px dashed var(--lcd-pixel);
-            height: 180px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            scrollbar-width: none;
-        }
-        .ending-story::-webkit-scrollbar { display: none; }
-
-        .modal-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 100; display: flex; justify-content: center; align-items: center; padding: 20px;
-        }
-        .modal-box {
-            background: var(--lcd-bg); border: 3px solid var(--lcd-pixel); padding: 20px; width: 100%; max-width: 340px; color: var(--lcd-pixel); box-shadow: 4px 4px 0px rgba(0,0,0,0.5); position: relative;
-        }
+        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; display: flex; justify-content: center; align-items: center; padding: 20px; flex-direction: column; }
+        .modal-box { background: var(--lcd-bg); border: 3px solid var(--lcd-pixel); padding: 20px; width: 100%; max-width: 340px; color: var(--lcd-pixel); box-shadow: 4px 4px 0px rgba(0,0,0,0.5); max-height: 90%; overflow-y: auto; }
+        
+        .item-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .item-card { border: 2px solid var(--lcd-pixel); padding: 10px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
+        
+        .tag { padding: 2px 6px; font-size: 10px; border: 1px solid var(--lcd-pixel); display: inline-block; margin-bottom: 4px; }
+        .event-banner { background: var(--lcd-pixel); color: var(--lcd-bg); padding: 10px; text-align: center; font-size: 13px; font-weight: bold; margin-bottom: 10px; border-radius: 4px; animation: slideDown 0.3s ease-out; }
+        @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
+        const SAVE_VERSION = 6; 
         const MAX_DAYS = 30;
 
-        const STAT_NAMES = {
-            'int': '지능',
-            'str': '체력',
-            'emo': '감성',
-            'soc': '사교',
-            'life': '생활',
-            'dil': '성실',
-            'hap': '행복',
-            '올스탯': '올스탯'
+        const getYYYYMMDD = (d) => {
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         };
 
+        const STAT_NAMES = { int: '지능', str: '체력', emo: '감성', soc: '사교', life: '생활', dil: '성실', hap: '행복', fatigue: '피로' };
+        const TYPE_NAMES = { normal: '노말', smart: '지식', macho: '마초', emo: '감성', social: '인싸' };
+        const STAGE_NAMES = { egg: '알', baby: '아기', child: '어린이', teen: '청소년', adult: '어른', old: '어르신' };
+
+        const CATEGORIES = {
+            '공부': { int: 2, dil: 1, fatigue: 7 },
+            '운동': { str: 2, dil: 1, fatigue: 10 },
+            '취미': { emo: 2, hap: 2, fatigue: 3 },
+            '사교': { soc: 2, hap: 2, fatigue: 5 },
+            '생활': { life: 2, dil: 1, fatigue: 2 },
+            '업무': { dil: 2, int: 1, fatigue: 8 },
+            '휴식': { hap: 3, str: 1, fatigue: -20 },
+        };
+
+        const ALL_ITEMS = [
+            { id: 'i_plant', name: '행운 화분', type: 'room', icon: '🪴', price: 100, rarity: 'COMMON' },
+            { id: 'i_lamp', name: '스탠드', type: 'room', icon: '🏮', price: 150, rarity: 'COMMON' },
+            { id: 'i_rug', name: '픽셀 러그', type: 'room', icon: '🟧', price: 200, rarity: 'COMMON' },
+            { id: 'i_sofa', name: '픽셀 소파', type: 'room', icon: '🛋️', price: 300, rarity: 'RARE' },
+            { id: 'i_tree', name: '미니 나무', type: 'room', icon: '🌳', price: 350, rarity: 'RARE' },
+            { id: 'i_neon', name: '네온 램프', type: 'room', icon: '💡', price: 400, rarity: 'EPIC' },
+            { id: 'i_bed', name: '포근 침대', type: 'room', icon: '🛏️', price: 450, rarity: 'EPIC' },
+            { id: 'i_pc', name: '게이밍PC', type: 'room', icon: '💻', price: 600, rarity: 'LEGENDARY' },
+            { id: 'i_tv', name: '브라운관TV',type: 'room', icon: '📺', price: 300, rarity: 'RARE' },
+            { id: 'i_book', name: '책장', type: 'room', icon: '📚', price: 250, rarity: 'COMMON' },
+            { id: 'i_ribbon', name: '빨간 리본', type: 'char', icon: '🎀', price: 150, rarity: 'COMMON' },
+            { id: 'i_glasses',name: '안경', type: 'char', icon: '👓', price: 150, rarity: 'COMMON' },
+            { id: 'i_sunglass',name: '선글라스', type: 'char', icon: '🕶️', price: 250, rarity: 'RARE' },
+            { id: 'i_crown', name: '황금 왕관', type: 'char', icon: '👑', price: 500, rarity: 'LEGENDARY' },
+            { id: 'i_hat', name: '야구 모자', type: 'char', icon: '🧢', price: 180, rarity: 'COMMON' },
+            { id: 'i_headset', name: '헤드폰', type: 'char', icon: '🎧', price: 320, rarity: 'EPIC' },
+            { id: 'i_neck', name: '금목걸이', type: 'char', icon: '📿', price: 350, rarity: 'EPIC' },
+            { id: 'i_bag', name: '가방', type: 'char', icon: '🎒', price: 200, rarity: 'RARE' },
+            { id: 'i_band', name: '운동 밴드', type: 'char', icon: '🥋', price: 220, rarity: 'RARE' },
+            { id: 'i_magic', name: '마법 지팡이',type: 'char', icon: '🪄', price: 700, rarity: 'LEGENDARY' }
+        ];
+
+        const ENDINGS = [
+            { id: 'e_insider', name: '슈퍼 인싸', desc: '사교 활동을 20회 이상 달성!', condition: (s, a) => a['사교'] >= 20, story: "당신의 캘린더는 쉴 틈이 없습니다.\n어딜 가든 사람들이 당신을 찾고 붐비는 파티의 중심엔 항상 당신이 있죠.\n픽셀 세계 최고의 마당발이 되었습니다!" },
+            { id: 'e_gymrat', name: '운동광', desc: '운동 활동을 20회 이상 달성!', condition: (s, a) => a['운동'] >= 20, story: "3대 500은 기본!\n비가 오나 눈이 오나 헬스장을 출석한 결과, 거대한 근육 덩어리가 되었습니다.\n프로틴 쉐이크 건배!" },
+            { id: 'e_workaholic', name: '일 중독', desc: '업무를 20회 이상 달성!', condition: (s, a) => a['업무'] >= 20, story: "워라밸이 뭔가요?\n당신은 완벽한 커리어를 위해 밤낮없이 일했습니다.\n통장 잔고는 넉넉하지만 눈밑 다크서클이 짙네요." },
+            { id: 'e_restgod', name: '휴식의 신', desc: '휴식을 20회 이상 달성!', condition: (s, a) => a['휴식'] >= 20, story: "아무것도 안 하는 것의 위대함!\n당신은 극강의 칠링(Chilling) 마스터가 되었습니다.\n세상에서 가장 평화로운 픽셀이 여깄네요." },
+            { id: 'e_collector', name: '수집가', desc: '아이템을 15개 이상 수집!', condition: (s, a, data) => data.inventory.length + data.equippedItems.length >= 15, story: "물욕의 화신!\n상점의 모든 물건을 사들인 당신의 방은 발 디딜 틈이 없습니다.\n가장 화려한 방을 꾸몄네요!" },
+            { id: 'e_perfect', name: '완벽한 인생', desc: '모든 스탯 80 이상.', condition: s => Object.values(s).every(v => v >= 80), story: "모든 것을 이룬 전설의 캐릭터.\n지, 덕, 체를 모두 갖춘 육각형 인간의 표본입니다." },
+            { id: 'e_sage', name: '현자', desc: '세상의 이치를 깨달았습니다.', condition: s => s.int >= 85 && s.emo >= 70 && s.hap >= 70, story: "지식과 감성의 완벽한 조화.\n사람들은 당신에게 삶의 조언을 구하러 찾아옵니다." },
+            { id: 'e_martial', name: '무림고수', desc: '속세를 떠나 무공 연마.', condition: s => s.str >= 85 && s.dil >= 90 && s.soc < 30, story: "사람들과 어울리는 대신 주먹을 쥐고 허공을 가릅니다.\n한계를 초월한 고수가 되었습니다." },
+            { id: 'e_freak', name: '괴짜 천재', desc: '자기만의 세계에 빠진 천재.', condition: s => s.int >= 80 && s.emo >= 90 && s.soc < 30, story: "이해할 수 없는 공식을 휘갈기며 우주의 진리를 탐구합니다.\n외롭지만 빛나는 고독 속의 천재." },
+            { id: 'e_bed', name: '침대 껌딱지', desc: '이불 밖은 위험해.', condition: s => s.dil < 20 && s.str < 30, story: "근육은 녹아내렸지만 침대 위 평화는 영원합니다.\n이불과 한 몸이 되었습니다." },
+            { id: 'e_normal', name: '평범한 시민', desc: '오늘도 묵묵히 살아갑니다.', condition: () => true, story: "적당히 일하고 적당히 쉬며 평범하게 30일을 보냈습니다.\n이런 평범한 사람들이 세상을 지탱합니다." }
+        ];
+
+        const DAILY_MISSIONS = [
+            { id: 'm1', title: '할 일 3개 완료하기', target: 3, rewardText: '행복 +3, 30G', onComplete: (d) => { d.stats.hap = Math.min(100, d.stats.hap+3); d.coins+=30; } },
+            { id: 'm2', title: '공부 1회 완료', target: 1, rewardText: '지능 +2, 30G', onComplete: (d) => { d.stats.int = Math.min(100, d.stats.int+2); d.coins+=30; } },
+            { id: 'm3', title: '운동 1회 완료', target: 1, rewardText: '체력 +2, 30G', onComplete: (d) => { d.stats.str = Math.min(100, d.stats.str+2); d.coins+=30; } },
+            { id: 'm4', title: '휴식 1회 완료', target: 1, rewardText: '피로 -15, 30G', onComplete: (d) => { d.fatigue = Math.max(0, d.fatigue-15); d.coins+=30; } },
+            { id: 'm5', title: '습관 1회 체크', target: 1, rewardText: '성실 +2, 50G', onComplete: (d) => { d.stats.dil = Math.min(100, d.stats.dil+2); d.coins+=50; } },
+        ];
+
+        const RANDOM_EVENTS = [
+            { id: 'ev_lucky', title: '행운의 날 🍀', desc: '오늘은 왠지 운이 좋습니다! 코인을 발견했습니다.', apply: d => { d.coins += 50; } },
+            { id: 'ev_tired', title: '갑작스러운 피로 🥱', desc: '몸이 찌뿌둥합니다. 피로도가 증가했습니다.', apply: d => { d.fatigue = Math.min(100, d.fatigue + 20); } },
+            { id: 'ev_snack', title: '간식 발견! 🍩', desc: '냉장고에서 맛있는 걸 발견했습니다. 행복이 오릅니다.', apply: d => { d.stats.hap = Math.min(100, d.stats.hap + 15); } },
+            { id: 'ev_rain', title: '비 오는 날 ☔', desc: '차분한 하루입니다. 감성이 풍부해집니다.', apply: d => { d.stats.emo = Math.min(100, d.stats.emo + 10); } },
+        ];
+
+        const getStage = (day) => {
+            if (day <= 2) return 'egg';
+            if (day <= 6) return 'baby';
+            if (day <= 14) return 'child';
+            if (day <= 22) return 'teen';
+            return 'adult';
+        };
+
+        // --- Audio & Haptics ---
         let audioCtx = null;
         const playSound = (type) => {
             try {
@@ -123,15 +169,14 @@
                 if (audioCtx.state === 'suspended') audioCtx.resume();
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
+                osc.connect(gain); gain.connect(audioCtx.destination);
                 
                 if (type === 'click') {
                     osc.type = 'square'; osc.frequency.setValueAtTime(600, audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.05);
                     gain.gain.setValueAtTime(0.05, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
                     osc.start(); osc.stop(audioCtx.currentTime + 0.05);
-                } else if (type === 'success') {
+                } else if (type === 'success' || type === 'coin') {
                     osc.type = 'square'; osc.frequency.setValueAtTime(400, audioCtx.currentTime);
                     osc.frequency.setValueAtTime(600, audioCtx.currentTime + 0.1); osc.frequency.setValueAtTime(800, audioCtx.currentTime + 0.2);
                     gain.gain.setValueAtTime(0.05, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
@@ -141,777 +186,1197 @@
                     osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.2);
                     gain.gain.setValueAtTime(0.05, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
                     osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+                } else if (type === 'evolve') {
+                    osc.type = 'square'; osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(400, audioCtx.currentTime + 0.1);
+                    osc.frequency.setValueAtTime(500, audioCtx.currentTime + 0.2);
+                    osc.frequency.setValueAtTime(600, audioCtx.currentTime + 0.3);
+                    osc.frequency.setValueAtTime(800, audioCtx.currentTime + 0.4);
+                    gain.gain.setValueAtTime(0.05, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.6);
                 }
-            } catch(e) { console.log('Audio disabled'); }
+            } catch(e) { }
         };
-
         const vibrate = (ms = 50) => { if (navigator.vibrate) navigator.vibrate(ms); };
         const triggerFeedback = (type) => { playSound(type); vibrate(type==='success'?[30,50,30]:50); };
 
-        const getSpeech = (stage, isSick) => {
-            if (stage === 'egg') return "꼬물꼬물... (아직 알이다)";
-            if (isSick) return "콜록콜록... 휴식이나 약이 필요해 🤒";
-            
-            const h = new Date().getHours();
-            let msgs = [];
-            if (stage === 'baby') {
-                msgs = ['하이!', '뭐함', '오이오이!', '밥줘!', '안녕','하이루','방가방가','나,태어났어', '오늘도 화이팅'];
+        const ProgressBar = ({ label, value, colorClass = "" }) => {
+            const filledBlocks = Math.floor(value / 10);
+            const blocks = Array.from({ length: 10 }, (_, i) => i < filledBlocks);
+            return (
+                <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '10px' }}>
+                    <div style={{ fontSize: '11px', marginBottom: '4px', fontWeight: 'bold' }}>{label}({value}/100)</div>
+                    <div className={colorClass} style={{ display: 'flex', gap: '2px', border: '2px solid var(--lcd-pixel)', padding: '2px', height: '14px', width: '100%' }}>
+                        {blocks.map((filled, idx) => (
+                            <div key={idx} style={{ flex: 1, backgroundColor: filled ? 'var(--lcd-pixel)' : 'transparent' }} />
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const drawFace = (x, y, face, bg) => {
+            if (face === 'happy') return <g fill={bg}><rect x={x} y={y} width="2" height="1"/><rect x={x+6} y={y} width="2" height="1"/><rect x={x+2} y={y+2} width="4" height="2"/></g>;
+            if (face === 'sad') return <g fill={bg}><rect x={x} y={y+1} width="2" height="2"/><rect x={x+6} y={y+1} width="2" height="2"/><rect x={x+3} y={y+3} width="2" height="2"/></g>;
+            if (face === 'sleepy') return <g fill={bg}><rect x={x} y={y+1} width="2" height="1"/><rect x={x+6} y={y+1} width="2" height="1"/><rect x={x+3} y={y+3} width="2" height="1"/></g>;
+            if (face === 'sleeping') return <g fill={bg}><rect x={x-1} y={y+1} width="4" height="1"/><rect x={x+5} y={y+1} width="4" height="1"/></g>;
+            return <g fill={bg}><rect x={x} y={y} width="2" height="3"/><rect x={x+6} y={y} width="2" height="3"/><rect x={x+2} y={y+4} width="4" height="1"/></g>;
+        };
+
+        const renderCharacter = (stage, charType, face, action, charItems, px, bg) => {
+            let bodySvg = null;
+
+            if (stage === 'egg') {
+                bodySvg = <g><rect x="7" y="10" width="10" height="10" /><rect x="9" y="8" width="6" height="2" /><rect x="9" y="20" width="6" height="2" /><rect x="5" y="12" width="2" height="6" /><rect x="17" y="12" width="2" height="6" /><rect x="11" y="14" width="2" height="2" fill={bg} /></g>;
+            } else if (stage === 'baby') {
+                bodySvg = <g><rect x="7" y="12" width="10" height="8" /><rect x="9" y="10" width="6" height="2" /><rect x="8" y="20" width="2" height="2" /><rect x="14" y="20" width="2" height="2" />{drawFace(8, 13, face, bg)}</g>;
+            } else if (stage === 'old') {
+                bodySvg = <g><rect x="6" y="10" width="12" height="10" /><rect x="8" y="8" width="8" height="2" /><rect x="10" y="4" width="4" height="4" /><rect x="8" y="20" width="2" height="2" /><rect x="14" y="20" width="2" height="2" />{drawFace(8, 13, face, bg)}</g>;
+            } 
+            else if (charType === 'smart') {
+                if (stage === 'child') bodySvg = <g><rect x="7" y="10" width="10" height="10" /><rect x="8" y="20" width="2" height="2" /><rect x="14" y="20" width="2" height="2" /><rect x="5" y="11" width="5" height="5" fill="none" stroke={bg}/><rect x="14" y="11" width="5" height="5" fill="none" stroke={bg}/><rect x="10" y="13" width="4" height="1" fill={bg}/>{drawFace(8, 12, face, bg)}</g>;
+                if (stage === 'teen') bodySvg = <g><rect x="6" y="8" width="12" height="12" /><rect x="8" y="20" width="2" height="3" /><rect x="14" y="20" width="2" height="3" /><rect x="4" y="9" width="6" height="6" fill="none" stroke={bg}/><rect x="14" y="9" width="6" height="6" fill="none" stroke={bg}/><rect x="10" y="11" width="4" height="1" fill={bg}/><rect x="17" y="13" width="5" height="6" fill={bg}/><rect x="18" y="14" width="3" height="4" fill={px}/>{drawFace(8, 10, face, bg)}</g>;
+                if (stage === 'adult') bodySvg = <g><rect x="6" y="6" width="12" height="14" /><rect x="4" y="8" width="16" height="10" /><rect x="2" y="4" width="20" height="2"/><rect x="7" y="2" width="10" height="2"/><rect x="20" y="4" width="1" height="6"/><rect x="8" y="20" width="2" height="3" /><rect x="14" y="20" width="2" height="3" /><rect x="4" y="10" width="6" height="5" fill="none" stroke={bg}/><rect x="14" y="10" width="6" height="5" fill="none" stroke={bg}/><rect x="10" y="12" width="4" height="1" fill={bg}/>{drawFace(8, 11, face, bg)}</g>;
+            } else if (charType === 'macho') {
+                if (stage === 'child') bodySvg = <g><rect x="6" y="10" width="12" height="10" /><rect x="8" y="20" width="2" height="2" /><rect x="14" y="20" width="2" height="2" /><rect x="6" y="11" width="3" height="1" fill={bg}/><rect x="15" y="11" width="3" height="1" fill={bg}/>{drawFace(8, 13, face, bg)}</g>;
+                if (stage === 'teen') bodySvg = <g><rect x="5" y="8" width="14" height="12" /><rect x="8" y="20" width="2" height="3" /><rect x="14" y="20" width="2" height="3" /><rect x="2" y="12" width="4" height="4"/><rect x="18" y="12" width="4" height="4"/>{drawFace(8, 11, face, bg)}</g>;
+                if (stage === 'adult') bodySvg = <g><rect x="4" y="6" width="16" height="14" /><rect x="2" y="8" width="20" height="8" /><rect x="7" y="20" width="3" height="2" /><rect x="14" y="20" width="3" height="2" /><rect x="7" y="14" width="10" height="5" fill="none" stroke={bg}/><rect x="12" y="14" width="1" height="5" fill={bg}/><rect x="7" y="16" width="10" height="1" fill={bg}/>{drawFace(8, 9, face, bg)}</g>;
+            } else if (charType === 'emo') {
+                if (stage === 'child') bodySvg = <g><rect x="5" y="12" width="14" height="8" rx="3"/><rect x="8" y="20" width="2" height="2" /><rect x="14" y="20" width="2" height="2" />{drawFace(8, 14, face, bg)}</g>;
+                if (stage === 'teen') bodySvg = <g><rect x="4" y="10" width="16" height="10" rx="4"/><rect x="5" y="6" width="3" height="5"/><rect x="16" y="6" width="3" height="5"/><rect x="8" y="20" width="2" height="2" /><rect x="14" y="20" width="2" height="2" />{drawFace(8, 12, face, bg)}</g>;
+                if (stage === 'adult') bodySvg = <g><rect x="3" y="8" width="18" height="12" rx="5"/><rect x="4" y="4" width="4" height="6"/><rect x="16" y="4" width="4" height="6"/><rect x="19" y="15" width="5" height="3" rx="1"/><rect x="8" y="20" width="2" height="2" /><rect x="14" y="20" width="2" height="2" />{drawFace(8, 11, face, bg)}</g>;
+            } else if (charType === 'social') {
+                if (stage === 'child') bodySvg = <g><rect x="7" y="10" width="10" height="10" /><rect x="8" y="20" width="2" height="2" /><rect x="14" y="20" width="2" height="2" /><rect x="11" y="6" width="3" height="4"/><rect x="14" y="7" width="2" height="3"/>{drawFace(8, 12, face, bg)}</g>;
+                if (stage === 'teen') bodySvg = <g><rect x="6" y="8" width="12" height="12" /><rect x="8" y="20" width="2" height="3" /><rect x="14" y="20" width="2" height="3" /><rect x="3" y="9" width="3" height="6"/><rect x="18" y="9" width="3" height="6"/><rect x="5" y="6" width="14" height="3"/>{drawFace(8, 11, face, bg)}</g>;
+                if (stage === 'adult') bodySvg = <g><rect x="6" y="6" width="12" height="14" /><rect x="4" y="8" width="16" height="10" /><rect x="7" y="20" width="3" height="2" /><rect x="14" y="20" width="3" height="2" /><rect x="6" y="2" width="2" height="4"/><rect x="10" y="0" width="2" height="6"/><rect x="14" y="1" width="2" height="5"/><rect x="18" y="4" width="2" height="4"/><rect x="6" y="9" width="12" height="4" fill={bg}/><rect x="7" y="10" width="10" height="2" fill={px}/>{face!=='sleeping' && drawFace(8,11,face,bg)}</g>;
             } else {
-                if (h >= 1 && h < 5) msgs = ['왜 안자?', '잠이 안 와?', '끄고 빨리 자', '폰 내려놔', '밤새게?', '내일 피곤하다'];
-                else if (h >= 5 && h < 9) msgs = ['오늘도 파이팅!', '일찍 일어났네', '난 출근 안하지롱', '아침 든든히 먹어', '기지개 한번 켜자', '상쾌한 아침이야'];
-                else if (h >= 9 && h < 12) msgs = ['시작해볼까', '건강이 최고', '모닝 아아 ㄱ?', '집중 집중!', '벌써 지치면 안돼', '오늘 할일 확인했어?'];
-                else if (h >= 12 && h < 15) msgs = ['밥 먹었어?', '맛점!', '혈당 스파이크 온다', '오후도 화이팅', '졸리지?', '기운 내!'];
-                else if (h >= 15 && h < 18) msgs = ['으아아', '정신차려', '화이팅', '간식 ㄱ?', '힘내 조금만 더', '뭐할거야?'];
-                else if (h >= 18 && h < 21) msgs = ['퇴근?', '저녁 먹었어?', '저녁 챙겨', '집 가는 중?', '오늘 하루도 수고했어', '푹 쉬어'];
-                else msgs = ['굿밤', '잘 준비 중?', '내일 뭐하지', '내일 뭐먹지', '일찍 자자', '오늘도 고마워'];
+                if (stage === 'child') bodySvg = <g><rect x="7" y="10" width="10" height="10" /><rect x="9" y="8" width="6" height="2" /><rect x="8" y="20" width="2" height="3" /><rect x="14" y="20" width="2" height="3" />{drawFace(8, 12, face, bg)}</g>;
+                if (stage === 'teen') bodySvg = <g><rect x="6" y="8" width="12" height="12" /><rect x="8" y="6" width="8" height="2" /><rect x="8" y="20" width="2" height="3" /><rect x="14" y="20" width="2" height="3" />{drawFace(8, 10, face, bg)}</g>;
+                if (stage === 'adult') bodySvg = <g><rect x="6" y="6" width="12" height="14" /><rect x="4" y="8" width="16" height="10" /><rect x="7" y="20" width="3" height="2" /><rect x="14" y="20" width="3" height="2" />{drawFace(8, 10, face, bg)}</g>;
             }
-            return msgs[Math.floor(Math.random() * msgs.length)];
+
+            return (
+                <g fill={px}>
+                    {bodySvg}
+                    
+                    {action === 'eat' && <g><rect x="18" y="16" width="6" height="3" fill={px} /><rect x="19" y="15" width="4" height="1" fill={bg} /><rect x="21" y="13" width="1" height="5" fill={px} /></g>}
+                    {action === 'study' && <g fill={px}><rect x="16" y="18" width="8" height="4" /><rect x="17" y="19" width="6" height="2" fill={bg} /><rect x="19" y="18" width="2" height="4" fill={px} /></g>}
+                    {action === 'wash' && <g fill={px}><rect x="2" y="8" width="3" height="3" fill="none" stroke={px} strokeWidth="1" /><rect x="18" y="6" width="2" height="2" fill="none" stroke={px} strokeWidth="1" /><rect x="16" y="10" width="4" height="4" fill="none" stroke={px} strokeWidth="1" /><rect x="4" y="16" width="2" height="2" fill="none" stroke={px} strokeWidth="1" /></g>}
+                    {action === 'sleep' && <g fill={px}>
+                        <rect x="15" y="8" width="3" height="1"/><rect x="17" y="9" width="1" height="1"/><rect x="16" y="10" width="1" height="1"/><rect x="15" y="11" width="3" height="1"/>
+                        <rect x="20" y="3" width="4" height="1"/><rect x="23" y="4" width="1" height="1"/><rect x="22" y="5" width="1" height="1"/><rect x="21" y="6" width="1" height="1"/><rect x="20" y="7" width="4" height="1"/>
+                    </g>}
+
+                    {charItems && charItems.map((item, idx) => {
+                        if(item.id==='i_glasses') return <g key={idx} fill={bg}><rect x="7" y="9" width="4" height="5" fill="none" stroke={px} strokeWidth="1" /><rect x="13" y="9" width="4" height="5" fill="none" stroke={px} strokeWidth="1" /><rect x="11" y="10" width="2" height="1" fill={px} /></g>;
+                        if(item.id==='i_sunglass') return <g key={idx} fill={px}><rect x="6" y="9" width="5" height="4" /><rect x="13" y="9" width="5" height="4" /><rect x="11" y="10" width="2" height="1"/></g>;
+                        if(item.id==='i_crown') return <g key={idx}><rect x="10" y="1" width="4" height="2" /><rect x="8" y="3" width="8" height="2" /></g>;
+                        if(item.id==='i_ribbon') return <g key={idx}><rect x="16" y="2" width="3" height="3" /><rect x="19" y="0" width="3" height="3" /><rect x="19" y="4" width="3" height="3" /></g>;
+                        return null;
+                    })}
+                </g>
+            );
         };
 
-        const CATEGORIES = {
-            '공부': { int: 2, dil: 1 },
-            '운동': { str: 2, dil: 1 },
-            '취미': { emo: 2, hap: 2 },
-            '사교': { soc: 2, hap: 2 },
-            '생활': { life: 2, dil: 1 },
-            '업무': { dil: 2, int: 1 },
-            '휴식': { hap: 3, str: 1 },
-        };
-
-        const ALL_ITEMS = [
-            { id: 'item_plant', name: '행운의 화분', type: 'room', icon: '🪴' },
-            { id: 'item_lamp', name: '레트로 스탠드', type: 'room', icon: '🏮' },
-            { id: 'item_rug', name: '픽셀 러그', type: 'room', icon: '🟧' },
-            { id: 'item_ribbon', name: '빨간 리본', type: 'char', icon: '🎀' },
-            { id: 'item_glasses', name: '멋쟁이 선글라스', type: 'char', icon: '🕶️' },
-            { id: 'item_crown', name: '황금 왕관', type: 'char', icon: '👑' },
-        ];
-
-        const ENDINGS = [
-            { id: 'e_perfect', name: '완벽한 인생', desc: '모든 것을 이룬 전설의 캐릭터.', condition: s => Object.values(s).every(v => v >= 80), story: "길고 긴 시간 동안 한순간도 나태해지지 않았습니다.\n매일 아침 일찍 일어나 공부하고, 운동하고, 사람들을 만나며 치열하게 살아왔죠.\n처음에는 그저 작은 알에 불과했던 당신이지만, 이제는 그 누구도 범접할 수 없는 '완벽함'의 상징이 되었습니다.\n\n세상 모든 사람들이 당신을 우러러보고 존경합니다.\n지능, 감성, 체력, 인간관계... 어느 하나 빠지는 것 없이 육각형의 꽉 찬 삶을 완성했습니다.\n어쩌면 시스템의 한계를 벗어난 첫 번째 존재일지도 모릅니다.\n이토록 완벽한 인생을 살아주셔서 감사합니다!" },
-            { id: 'e_sage', name: '현자', desc: '세상의 이치를 깨달았습니다.', condition: s => s.int >= 85 && s.emo >= 70 && s.hap >= 70, story: "머리가 무거워질 정도로 방대한 지식을 흡수했습니다.\n수많은 책을 읽고, 밤을 새워가며 논문을 쓰고 철학을 고민했죠.\n하지만 지식에만 매몰되지 않고, 따뜻한 감성과 여유를 잃지 않았습니다.\n\n이제 당신은 단순히 똑똑한 것을 넘어 세상의 이치와 섭리를 꿰뚫어보는 '현자'가 되었습니다.\n수많은 사람들이 당신에게 삶의 조언을 구하러 찾아옵니다.\n창밖을 바라보며 마시는 차 한 잔의 여유 속에서, 당신은 진정한 행복의 의미를 깨달았습니다." },
-            { id: 'e_martial', name: '무림고수', desc: '속세를 떠나 무공을 연마했습니다.', condition: s => s.str >= 85 && s.dil >= 90 && s.soc < 30, story: "사람들과 어울려 노는 시간마저 아까웠습니다.\n그 시간에 덤벨을 들고, 산을 뛰고, 땀을 흘리며 스스로의 육체를 단련하는 데에만 매진했죠.\n친구들의 연락도 무시한 채 오로지 강해지기 위한 수련을 거듭했습니다.\n\n그 결과, 당신의 육체는 한계를 초월하여 그 어떤 무기보다 강하고 단단해졌습니다.\n사람들은 당신을 기인이나 무림고수라 부르며 두려워하지만, 당신은 속세의 평가에 연연하지 않습니다.\n오늘도 깊은 산속에서 주먹을 쥐고 허공을 가를 뿐입니다." },
-            { id: 'e_freak', name: '괴짜 천재', desc: '자기만의 세계에 빠진 천재.', condition: s => s.int >= 80 && s.emo >= 90 && s.soc < 30, story: "인간관계는 피곤하고 무의미하다고 느꼈습니다.\n방문 앞을 굳게 걸어 잠그고, 당신의 머릿속에 떠오르는 영감과 연구에만 집착했습니다.\n이해할 수 없는 공식을 벽에 휘갈기고, 알 수 없는 기계들을 분해하고 조립했죠.\n\n세상은 당신을 이해하지 못했고, 친구들은 떠나갔습니다.\n하지만 당신은 신경 쓰지 않습니다. 남들이 보지 못하는 우주의 진리를 당신만이 보고 있으니까요.\n외롭지만 빛나는 고독 속에서, 당신은 역사에 기록될 미친 천재가 되었습니다." },
-            { id: 'e_bed', name: '침대 껌딱지', desc: '침대 밖은 너무 위험해...', condition: s => s.dil < 20 && s.str < 30, story: "할 일? 귀찮아. 운동? 피곤해.\n당신에게 가장 완벽한 피난처는 바로 포근한 이불 속이었습니다.\n햇빛이 들어오는 것도 싫어 창문을 굳게 닫고, 하루 종일 뒹굴거리며 시간을 보냈죠.\n\n이제 당신의 근육은 거의 녹아내려 걷기조차 쉽지 않습니다.\n하지만 무슨 상관인가요? 침대 위에서 넷플릭스를 보고 배달 음식을 시켜 먹는 지금 이 순간이 가장 평화로운걸요.\n세상이 어떻게 변하든, 당신은 영원히 이불과 한 몸이 되기로 결심했습니다." },
-            { id: 'e_scroll', name: '도파민 중독', desc: '스마트폰을 놓지 못합니다.', condition: s => s.dil < 30 && s.hap < 40, story: "알림음이 울리지 않으면 불안해지기 시작했습니다.\n해야 할 일은 태산인데, 손가락은 계속해서 쇼츠와 릴스를 아래로 넘기고 있었죠.\n1분짜리 자극적인 영상들이 끝없이 이어지며 당신의 뇌를 점령했습니다.\n\n이제 긴 글을 읽거나 무언가에 집중하는 것은 불가능해졌습니다.\n도파민이 채워질 때만 잠깐 기분이 좋아졌다가, 금세 우울하고 무기력해지는 날들의 반복.\n당신은 디지털 세계의 미로 속에 갇힌 도파민의 노예로 전락하고 말았습니다." },
-            { id: 'e_scholar', name: '위대한 학자', desc: '세상을 바꿀 논문을 발표했습니다.', condition: s => s.int >= 80 && s.dil >= 70, story: "어릴 적부터 당신의 손에는 항상 책이 들려 있었습니다.\n남들이 놀러 다닐 때도 묵묵히 책상에 앉아 활자와 수식의 바다를 탐험했죠.\n꾸준한 성실함과 비상한 지능이 결합하여 당신의 두뇌는 완벽한 도서관이 되었습니다.\n\n마침내 당신은 세상의 난제를 해결할 엄청난 논문을 발표했습니다!\n뉴스 속보에 당신의 이름이 도배되고, 노벨상 위원회에서 전화가 걸려오기 시작했습니다.\n학문이라는 끝없는 산맥의 가장 높은 꼭대기에 당신의 깃발이 꽂혔습니다." },
-            { id: 'e_athlete', name: '운동선수', desc: '최고의 피지컬을 완성했습니다!', condition: s => s.str >= 85 && s.dil >= 70, story: "근육은 거짓말을 하지 않는다.\n이것이 당신의 유일한 삶의 신조였습니다.\n근육통이 찾아올 때마다 희열을 느꼈고, 닭가슴살과 프로틴은 당신의 주식이 되었습니다.\n\n비가 오나 눈이 오나 루틴을 거르지 않고 운동을 계속한 결과...\n당신의 몸은 그리스 조각상처럼 완벽하고 아름다운 근육으로 뒤덮였습니다.\n국가대표로 발탁되어 올림픽 무대에 선 당신의 등장은 전 세계 스포츠 팬들을 열광시키기에 충분했습니다." },
-            { id: 'e_artist', name: '예술가', desc: '아름다운 작품을 남깁니다.', condition: s => s.emo >= 85 && s.int >= 55, story: "당신의 눈에 비친 세상은 그저 평범한 일상이 아니었습니다.\n떨어지는 낙엽 하나, 스쳐가는 바람 소리 하나에도 깊은 영감을 받고 눈물을 흘렸죠.\n넘쳐흐르는 감성을 붓과 펜, 그리고 멜로디에 담아내기 시작했습니다.\n\n처음엔 당신을 이상하게 보던 사람들도, 당신이 만들어낸 압도적인 예술 작품 앞에서는 모두 숨을 죽이고 감동을 받았습니다.\n이제 당신의 그림과 음악은 시대를 넘어 후세에 영원히 기억될 아름다운 마스터피스가 되었습니다." },
-            { id: 'e_happy', name: '행복한 사람', desc: '그저 행복하면 된 거 아닐까요?', condition: s => s.hap >= 90, story: "돈이 많지 않아도, 남들보다 똑똑하지 않아도 괜찮았습니다.\n맛있는 밥을 먹고, 따뜻한 물로 샤워를 하고, 푹 자고 일어나는 일상.\n소소하지만 확실한 행복을 쫓으며 스트레스 없는 하루하루를 보냈습니다.\n\n세상은 성공해야만 한다고 외치지만, 당신의 얼굴엔 언제나 구김살 없는 환한 웃음이 가득합니다.\n당신의 긍정적인 에너지는 주변 사람들마저 기분 좋게 물들입니다.\n치열한 경쟁 없이 평화롭게 살아가는 당신이 어쩌면 진정한 인생의 승리자일지도 모릅니다." },
-            { id: 'e_normal', name: '평범한 시민', desc: '오늘도 묵묵히 살아갑니다.', condition: () => true, story: "크게 사고 치지도 않았고, 그렇다고 역사에 남을 만한 업적을 세우지도 않았습니다.\n적당히 일하고, 적당히 쉬고, 가끔 지각도 하며 남들 사는 만큼 평범하게 30일을 보냈습니다.\n\n아침 지옥철에 몸을 싣고, 퇴근 후엔 캔맥주 하나로 하루의 피로를 씻어냅니다.\n눈에 띄지 않는 아주 평범한 시민 1. \n하지만 세상은 당신같이 묵묵히 자신의 톱니바퀴를 돌리는 평범한 사람들 덕분에 오늘도 무사히 굴러가고 있습니다.\n수고 많으셨습니다. 내일도 출근하셔야죠?" },
-        ];
-
-        const getEnding = (stats) => ENDINGS.find(e => e.condition(stats)) || ENDINGS[ENDINGS.length - 1];
-
-        const getSummaryEncouragement = (penaltyAmt, gainsKeysLength) => {
-            if (penaltyAmt > 0) {
-                return "조금 아쉬운 하루였지만, 내일은 더 잘할 수 있을 거예요.\n너무 자책하지 말고 푹 쉬고 다시 힘차게 시작해봐요!";
-            } else if (gainsKeysLength === 0) {
-                return "오늘은 푹 쉬어가는 하루였군요. 쉼도 정말 중요하죠.\n재충전한 에너지를 바탕으로 내일 다시 나아가길 응원할게요!";
-            } else {
-                return "오늘 하루도 계획한 일들을 해내느라 정말 고생 많으셨어요!\n열심히 달려온 당신의 하루하루가 모여 멋진 인생이 될 거예요.";
-            }
-        };
-
-        const RoomAndCharacter = ({ stats, day, isAnimating, action, speech, isNight, isSick, equippedItems }) => {
+        const RoomComponent = ({ data, isAnimating, action, speech, timeZone }) => {
             const [charPos, setCharPos] = useState(0);
             const [isJumping, setIsJumping] = useState(false);
-
-            const hasDesk = stats.int > 20;
-            const hasDumbbell = stats.str > 20;
-            const isClean = stats.life > 40;
-            const hasGlasses = stats.int > 40 || equippedItems.some(i => i.id === 'item_glasses');
-            const isMuscular = stats.str > 40;
-            const hasRibbon = stats.emo > 40 || equippedItems.some(i => i.id === 'item_ribbon');
             
-            const stage = day <= 3 ? 'egg' : day <= 14 ? 'baby' : 'adult';
+            const stage = getStage(data.day);
+            const charType = data.charType || 'normal';
 
-            let face = stats.hap > 70 ? 'happy' : stats.hap < 30 ? 'sad' : 'normal';
+            const hasDesk = data.stats.int > 70;
+            const hasDumbbell = data.stats.str > 70;
+            const isClean = data.stats.life > 70;
+            const hasFriends = data.stats.soc > 70;
+            const isSick = data.isSick;
+
+            let face = data.stats.hap > 80 ? 'happy' : data.stats.hap < 30 ? 'sad' : 'normal';
+            if (data.fatigue >= 60) face = 'sleepy';
             if (isSick) face = 'sad';
             if (action === 'eat' || action === 'wash') face = 'happy';
             if (action === 'study') face = 'normal';
+            if (action === 'sleep') face = 'sleeping';
 
-            let displaySpeech = speech;
-            if (action === 'eat') displaySpeech = "냠냠 쩝쩝.. 맛있다!";
-            if (action === 'study') displaySpeech = "열공 중... ✏️";
-            if (action === 'wash') displaySpeech = "뽀득뽀득 개운해~ 🫧";
-            if (action === 'heal') displaySpeech = "아~ 살 것 같다! 💊";
-
-            const bg = isNight ? "#2c3524" : "#8fa07d";
-            const px = isNight ? "#8fa07d" : "#2c3524";
+            // 시간대별 테마 컬러맵 완벽 연동
+            const bgMap = { 'dawn':'#325a5f', 'morning':'#8fa07d', 'afternoon':'#899b7f', 'night':'#1f2d18' };
+            const pxMap = { 'dawn':'#54a3a1', 'morning':'#3e4835', 'afternoon':'#2e3c10', 'night':'#a1b590' };
+            const bg = bgMap[timeZone] || '#8fa07d';
+            const px = pxMap[timeZone] || '#3e4835';
 
             useEffect(() => {
                 const moveInterval = setInterval(() => {
-                    if (Math.random() < 0.4) {
-                        const newPos = Math.floor(Math.random() * 121) - 60;
-                        setCharPos(newPos);
-                    }
-                }, 3000);
+                    if (Math.random() < 0.4 && !isSick && data.fatigue < 80 && action !== 'sleep') setCharPos(Math.floor(Math.random() * 100) - 50);
+                }, 4000);
                 return () => clearInterval(moveInterval);
-            }, []);
+            }, [isSick, data.fatigue, action]);
 
             const handleJump = () => {
-                if (isJumping) return;
+                if (isJumping || data.fatigue >= 90 || isSick || action === 'sleep') return;
+                triggerFeedback('click');
                 setIsJumping(true);
                 setTimeout(() => setIsJumping(false), 300);
             };
 
-            const roomItems = equippedItems.filter(i => i.type === 'room');
-            const hasCrown = equippedItems.some(i => i.id === 'item_crown');
+            const roomItems = data.equippedItems.filter(i => i.type === 'room');
+            const charItems = data.equippedItems.filter(i => i.type === 'char');
+
+            let bubbleSpeech = speech;
+            if (action === 'eat') bubbleSpeech = "냠냠 쩝쩝!";
+            else if (action === 'study') bubbleSpeech = "열공 중... ✏️";
+            else if (action === 'wash') bubbleSpeech = "뽀득뽀득~ 🫧";
+            else if (action === 'sleep') bubbleSpeech = "쿨쿨... 💤";
+            else if (action === 'heal') bubbleSpeech = "살 것 같다! 💊";
+
+            const animClass = isAnimating ? 'animate-bounce' : (isSick || data.fatigue >= 80 ? 'animate-tremble' : '');
 
             return (
-                <div style={{ position: 'relative', width: '100%', height: '220px', borderBottom: `3px solid ${px}`, overflow: 'hidden', flexShrink: 0 }}>
-                    {displaySpeech && <div className="pixel-bubble" style={{ transform: `translateX(calc(-50% + ${charPos}px))` }}>{displaySpeech}</div>}
-
+                <div style={{ position: 'relative', width: '100%', height: '200px', borderBottom: `3px solid ${px}`, overflow: 'hidden', flexShrink: 0 }}>
+                    {bubbleSpeech && <div className="pixel-bubble" style={{ transform: `translateX(calc(-50% + ${charPos}px))` }}>{bubbleSpeech}</div>}
+                    
                     <svg width="100%" height="100%" viewBox="0 0 64 64" preserveAspectRatio="none" style={{ shapeRendering: 'crispEdges' }}>
                         <rect x="0" y="50" width="64" height="1" fill={px} />
                         {!isClean && <rect x="10" y="55" width="2" height="1" fill={px} />}
-                        {!isClean && <rect x="50" y="52" width="1" height="1" fill={px} />}
-
+                        
                         <g fill="none" stroke={px} strokeWidth="1">
-                            <rect x="5" y="5" width="16" height="16" fill={isNight ? px : bg}/>
-                            {isNight && <g fill={bg} stroke="none">
-                                <rect x="8" y="8" width="1" height="1" />
-                                <rect x="16" y="10" width="1" height="1" />
-                                <rect x="12" y="15" width="1" height="1" />
-                            </g>}
-                            {!isNight && <g>
-                                <rect x="5" y="13" width="16" height="1" fill={px} stroke="none" />
-                                <rect x="13" y="5" width="1" height="16" fill={px} stroke="none" />
-                            </g>}
+                            <defs>
+                                <clipPath id="win-clip"><rect x="5" y="5" width="16" height="16" /></clipPath>
+                            </defs>
+                            
+                            <rect x="5" y="5" width="16" height="16" fill={(timeZone === 'dawn' || timeZone === 'night') ? px : bg}/>
+                            
+                            <g clipPath="url(#win-clip)" stroke="none">
+                                {(timeZone === 'dawn' || timeZone === 'night') && (
+                                    <g fill={bg}>
+                                        <rect x="7" y="7" width="1" height="1" />
+                                        <rect x="17" y="9" width="1" height="1" />
+                                        <rect x="10" y="13" width="1" height="1" />
+                                        <rect x="14" y="17" width="1" height="1" />
+                                        <rect x="18" y="15" width="1" height="1" />
+                                        <rect x="8" y="18" width="1" height="1" />
+                                    </g>
+                                )}
+                                
+                                {timeZone === 'night' && (
+                                    <g fill={bg}>
+                                        <rect x="14" y="6" width="4" height="4" />
+                                        <rect x="13" y="7" width="3" height="3" fill={px} />
+                                    </g>
+                                )}
+
+                                {(timeZone === 'morning' || timeZone === 'afternoon') && (() => {
+                                    const now = new Date();
+                                    const ch = now.getHours() + now.getMinutes() / 60;
+                                    let sunY = 13;
+                                    if (timeZone === 'morning') {
+                                        const ratio = Math.max(0, Math.min(1, (ch - 7) / 5));
+                                        sunY = 19 - (12 * ratio);
+                                    } else {
+                                        const ratio = Math.max(0, Math.min(1, (ch - 12) / 6));
+                                        sunY = 7 + (12 * ratio);
+                                    }
+                                    return <rect x="11" y={sunY} width="4" height="4" fill={px} />;
+                                })()}
+
+                                {(timeZone === 'morning' || timeZone === 'afternoon') && (
+                                    <g fill={px}>
+                                        <rect y="8" width="6" height="2">
+                                            <animate attributeName="x" from="21" to="-6" dur="18s" repeatCount="indefinite" />
+                                        </rect>
+                                        <rect y="13" width="4" height="2">
+                                            <animate attributeName="x" from="21" to="-4" dur="12s" repeatCount="indefinite" />
+                                        </rect>
+                                        <rect y="17" width="5" height="2">
+                                            <animate attributeName="x" from="21" to="-5" dur="22s" repeatCount="indefinite" />
+                                        </rect>
+                                    </g>
+                                )}
+                            </g>
+                            
+                            <g fill={(timeZone === 'dawn' || timeZone === 'night') ? bg : px} stroke="none">
+                                <rect x="5" y="12" width="16" height="1" />
+                                <rect x="12" y="5" width="1" height="16" />
+                            </g>
                         </g>
 
                         {roomItems.map((item, idx) => (
-                            <text key={item.id} x={25 + idx * 12} y="48" fontSize="10" style={{userSelect:'none'}}>{item.icon}</text>
+                            <text key={item.id} x={25 + (idx%3)*12} y={48 - Math.floor(idx/3)*10} fontSize="10">{item.icon}</text>
                         ))}
 
-                        {isSick && <g fill={px}>
-                            <rect x="45" y="10" width="8" height="2" />
-                            <rect x="48" y="7" width="2" height="8" />
-                        </g>}
-
-                        {hasDesk && stage === 'adult' && <g fill={px}>
-                            <rect x="44" y="36" width="16" height="1" />
-                            <rect x="46" y="37" width="2" height="13" />
-                            <rect x="56" y="37" width="2" height="13" />
-                            <rect x="48" y="33" width="6" height="3" fill="none" stroke={px} strokeWidth="1" />
-                        </g>}
-                        {hasDumbbell && stage === 'adult' && <g fill={px}>
-                            <rect x="6" y="46" width="8" height="1" />
-                            <rect x="4" y="44" width="2" height="5" />
-                            <rect x="14" y="44" width="2" height="5" />
-                        </g>}
+                        {hasDesk && stage !== 'egg' && <g fill={px}><rect x="44" y="36" width="16" height="1" /><rect x="46" y="37" width="2" height="13" /><rect x="56" y="37" width="2" height="13" /></g>}
+                        {hasDumbbell && stage !== 'egg' && <g fill={px}><rect x="6" y="46" width="8" height="1" /><rect x="4" y="44" width="2" height="5" /><rect x="14" y="44" width="2" height="5" /></g>}
+                        {hasFriends && stage !== 'egg' && <text x="50" y="25" fontSize="10">👥</text>}
+                        {isSick && <g fill={px}><rect x="45" y="10" width="8" height="2" /><rect x="48" y="7" width="2" height="8" /></g>}
                     </svg>
 
-                    <div className={isJumping || isAnimating ? 'animate-bounce' : (isSick ? 'animate-tremble' : '')}
+                    <div className={isJumping ? 'animate-bounce' : animClass}
                          onClick={handleJump}
-                         onTouchStart={handleJump}
-                         style={{ 
-                             position: 'absolute', bottom: '14%', left: '50%', 
-                             transform: `translateX(calc(-50% + ${charPos}px)) scale(3)`, 
-                             transition: 'transform 2s ease-in-out', 
-                             transformOrigin: 'bottom center', width: '24px', height: '24px', 
-                             imageRendering: 'pixelated', cursor: 'pointer' 
-                         }}>
+                         style={{ position: 'absolute', bottom: '14%', left: '50%', transform: `translateX(calc(-50% + ${charPos}px)) scale(3)`, transition: 'transform 1.5s ease-in-out', transformOrigin: 'bottom center', width: '24px', height: '24px', imageRendering: 'pixelated', cursor: 'pointer' }}>
                         <svg width="100%" height="100%" viewBox="0 0 24 24" style={{ shapeRendering: 'crispEdges' }}>
-                            <g fill={px}>
-                                {stage === 'egg' && <g>
-                                    <rect x="7" y="10" width="10" height="10" />
-                                    <rect x="9" y="8" width="6" height="2" />
-                                    <rect x="9" y="20" width="6" height="2" />
-                                    <rect x="5" y="12" width="2" height="6" />
-                                    <rect x="17" y="12" width="2" height="6" />
-                                    <rect x="11" y="14" width="2" height="2" fill={bg} />
-                                </g>}
-
-                                {stage === 'baby' && <g>
-                                    <rect x="7" y="12" width="10" height="8" />
-                                    <rect x="9" y="10" width="6" height="2" />
-                                    {face === 'happy' && <g fill={bg}><rect x="8" y="13" width="2" height="1"/><rect x="14" y="13" width="2" height="1"/></g>}
-                                    {face !== 'happy' && <g fill={bg}><rect x="8" y="13" width="2" height="2"/><rect x="14" y="13" width="2" height="2"/></g>}
-                                    <rect x="8" y="20" width="2" height="2" />
-                                    <rect x="14" y="20" width="2" height="2" />
-                                </g>}
-
-                                {stage === 'adult' && <g>
-                                    <rect x="6" y="6" width="12" height="14" />
-                                    <rect x="4" y="8" width="16" height="10" />
-                                    
-                                    {face === 'normal' && <g fill={bg}><rect x="8" y="10" width="2" height="4" /><rect x="14" y="10" width="2" height="4" /></g>}
-                                    {face === 'happy' && <g fill={bg}><rect x="7" y="10" width="3" height="2" /><rect x="7" y="12" width="1" height="2" /><rect x="14" y="10" width="3" height="2" /><rect x="16" y="12" width="1" height="2" /></g>}
-                                    {face === 'sad' && <g fill={bg}><rect x="7" y="12" width="3" height="2" /><rect x="7" y="10" width="1" height="2" /><rect x="14" y="12" width="3" height="2" /><rect x="16" y="10" width="1" height="2" /></g>}
-
-                                    {face === 'normal' && <rect x="10" y="16" width="4" height="1" fill={bg} />}
-                                    {face === 'happy' && <rect x="10" y="15" width="4" height="3" fill={bg} />}
-                                    {face === 'sad' && <rect x="11" y="17" width="2" height="2" fill={bg} />}
-
-                                    <rect x="7" y="20" width="3" height="2" />
-                                    <rect x="14" y="20" width="3" height="2" />
-
-                                    {isMuscular && <g><rect x="1" y="10" width="3" height="5" /><rect x="20" y="10" width="3" height="5" /></g>}
-                                    {hasGlasses && <g fill={bg}><rect x="7" y="9" width="4" height="6" fill="none" stroke={px} strokeWidth="1" /><rect x="13" y="9" width="4" height="6" fill="none" stroke={px} strokeWidth="1" /><rect x="11" y="11" width="2" height="1" fill={px} /></g>}
-                                    {hasRibbon && <g><rect x="16" y="2" width="3" height="3" /><rect x="19" y="0" width="3" height="3" /><rect x="19" y="4" width="3" height="3" /></g>}
-                                    {hasCrown && <g><rect x="10" y="1" width="4" height="2" /><rect x="9" y="3" width="6" height="2" /></g>}
-
-                                    {action === 'eat' && <g><rect x="18" y="16" width="6" height="3" fill={px} /><rect x="19" y="19" width="4" height="1" fill={px} /><rect x="19" y="15" width="4" height="1" fill={bg} /> <rect x="20" y="14" width="2" height="1" fill={bg} /> <rect x="21" y="13" width="1" height="5" fill={px} /> </g>}
-                                    {action === 'study' && <g fill={px}><rect x="16" y="18" width="8" height="4" /><rect x="17" y="19" width="6" height="2" fill={bg} /><rect x="19" y="18" width="2" height="4" fill={px} /></g>}
-                                    {action === 'wash' && <g fill={px}><rect x="2" y="8" width="3" height="3" fill="none" stroke={px} strokeWidth="1" /><rect x="18" y="6" width="2" height="2" fill="none" stroke={px} strokeWidth="1" /><rect x="16" y="10" width="4" height="4" fill="none" stroke={px} strokeWidth="1" /><rect x="4" y="16" width="2" height="2" fill="none" stroke={px} strokeWidth="1" /></g>}
-                                </g>}
-                            </g>
+                            {renderCharacter(stage, charType, face, action, charItems, px, bg)}
                         </svg>
                     </div>
                 </div>
             );
         };
 
-        // [추가] 숫자 표시가 포함된 ProgressBar
-        const ProgressBar = ({ label, value }) => (
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                <div style={{ width: '100px', fontSize: '12px' }}>{label} ({value}/100)</div>
-                <div className="stat-bar-bg" style={{ flex: 1, marginLeft: '5px' }}>
-                    <div className="stat-bar-fill" style={{ width: `${Math.min(100, Math.max(0, value))}%` }}></div>
-                </div>
-            </div>
-        );
-
         const App = () => {
-            const [isFirstPlay, setIsFirstPlay] = useState(() => JSON.parse(localStorage.getItem('todotchi_first') || 'true'));
-            const [name, setName] = useState(() => localStorage.getItem('todotchi_name') || '');
-            const [day, setDay] = useState(() => parseInt(localStorage.getItem('todotchi_day') || '1'));
-            const [stats, setStats] = useState(() => JSON.parse(localStorage.getItem('todotchi_stats') || JSON.stringify({ int: 10, str: 10, emo: 10, soc: 10, life: 10, dil: 10, hap: 50 })));
-            const [todos, setTodos] = useState(() => JSON.parse(localStorage.getItem('todotchi_todos') || '[]'));
-            const [habits, setHabits] = useState(() => JSON.parse(localStorage.getItem('todotchi_habits') || '[]'));
-            const [inventory, setInventory] = useState(() => JSON.parse(localStorage.getItem('todotchi_inv') || '[]'));
-            const [equippedItems, setEquippedItems] = useState(() => JSON.parse(localStorage.getItem('todotchi_equip') || '[]'));
-            const [encyclopedia, setEncyclopedia] = useState(() => JSON.parse(localStorage.getItem('todotchi_ency') || '[]'));
-            const [lastDate, setLastDate] = useState(() => localStorage.getItem('todotchi_last_date') || new Date().toDateString());
-            
-            const [isSick, setIsSick] = useState(() => JSON.parse(localStorage.getItem('todotchi_sick') || 'false'));
-            
+            const [data, setData] = useState(() => {
+                try {
+                    const saved = localStorage.getItem('todotchi_save');
+                    if (saved) {
+                        let parsed = JSON.parse(saved);
+                        if (!parsed.calendarEvents) parsed.calendarEvents = [];
+                        if (!parsed.gameStartDate) parsed.gameStartDate = getYYYYMMDD(new Date());
+                        return parsed;
+                    }
+                } catch(e) {}
+                
+                return {
+                    version: SAVE_VERSION, name: '', day: 1, 
+                    charType: 'normal',
+                    stats: { int: 10, str: 10, emo: 10, soc: 10, life: 10, dil: 10, hap: 50 },
+                    fatigue: 0, coins: 0, combo: 0, bestCombo: 0,
+                    todos: [], habits: [], inventory: [], equippedItems: [], encyclopedia: [],
+                    actionCounts: { 공부:0, 운동:0, 취미:0, 사교:0, 생활:0, 업무:0, 휴식:0 },
+                    dailyMission: null, dailyMissionCompleted: false,
+                    lastDate: new Date().toDateString(), isSick: false, firstPlay: true, randomEvent: null,
+                    showEvolution: null,
+                    calendarEvents: [], gameStartDate: getYYYYMMDD(new Date())
+                };
+            });
+
             const [tab, setTab] = useState('home');
+            const [subTab, setSubTab] = useState('shop');
+            const [todoTab, setTodoTab] = useState('today'); 
+            
             const [isAnimating, setIsAnimating] = useState(false);
             const [action, setAction] = useState(null); 
-            const [speech, setSpeech] = useState('');   
+            const [bubbleText, setBubbleText] = useState('');
+            const [timeZone, setTimeZone] = useState('morning');
+            
             const [newTodoTitle, setNewTodoTitle] = useState('');
             const [newTodoCat, setNewTodoCat] = useState('공부');
             
             const [showHabitModal, setShowHabitModal] = useState(false);
             const [habitTitle, setHabitTitle] = useState('');
-            const [habitGoalDays, setHabitGoalDays] = useState(3);
-            const [habitCategory, setHabitCategory] = useState('공부');
+            const [habitGoal, setHabitGoal] = useState(7);
+            const [habitCat, setHabitCat] = useState('공부');
 
             const [showSummary, setShowSummary] = useState(false);
-            const [dailyGains, setDailyGains] = useState({});
-            const [dailyRewards, setDailyRewards] = useState([]);
-            const [dailyHabitLogs, setDailyHabitLogs] = useState([]);
-            const [penaltyAmt, setPenaltyAmt] = useState(0); 
+            const [summaryData, setSummaryData] = useState(null);
             const [ending, setEnding] = useState(null);
-            
-            const [currentTime, setCurrentTime] = useState(new Date());
-            
-            const currentHour = currentTime.getHours();
-            const isNight = currentHour >= 18 || currentHour < 6;
 
-            const stage = day <= 3 ? 'egg' : day <= 14 ? 'baby' : 'adult';
+            const [calYear, setCalYear] = useState(new Date().getFullYear());
+            const [calMonth, setCalMonth] = useState(new Date().getMonth() + 1); 
+            const [calZoom, setCalZoom] = useState(1);
+            const calRef = useRef(null);
+            const baseZoomRef = useRef(calZoom);
+
+            const [calModalMode, setCalModalMode] = useState('view');
+            const [selectedCalDate, setSelectedCalDate] = useState(null);
+            const [calEventTitle, setCalEventTitle] = useState('');
+            const [calEventEndDate, setCalEventEndDate] = useState('');
+            const [calEventColor, setCalEventColor] = useState('#ff6b6b');
 
             useEffect(() => {
-                const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+                if (data.showEvolution) {
+                    triggerFeedback('evolve');
+                }
+            }, [data.showEvolution]);
+
+            useEffect(() => {
+                const timer = setInterval(() => {
+                    const h = new Date().getHours();
+                    let tz = 'morning';
+                    if (h >= 1 && h < 7) tz = 'dawn';
+                    else if (h >= 7 && h < 12) tz = 'morning';
+                    else if (h >= 12 && h < 18) tz = 'afternoon';
+                    else tz = 'night';
+                    setTimeZone(tz);
+                }, 1000);
                 return () => clearInterval(timer);
             }, []);
 
             useEffect(() => {
-                if (tab === 'home' && !action) setSpeech(getSpeech(stage, isSick));
-            }, [tab, action, stage, isSick]); 
+                if (tab === 'home' && !action) {
+                    const stage = getStage(data.day);
+                    if (stage === 'egg') setBubbleText("꼬물꼬물...");
+                    else if (data.isSick) setBubbleText("콜록콜록... 휴식이나 약이 필요해 🤒");
+                    else if (data.fatigue >= 80) setBubbleText("너무 피곤해요... 😵");
+                    else {
+                        const msgs = {
+                            dawn: ['새벽 공기가 차가워요', '아직 안 자고 있나요?', '고요한 새벽...'],
+                            morning: ['좋은 아침!', '오늘도 파이팅', '기지개 쫙~'],
+                            afternoon: ['집중 집중!', '오후도 힘내자', '할일 체크했어?'],
+                            night: ['이제 잘 시간이야', '안 자?', '피곤해진다~']
+                        };
+                        const arr = msgs[timeZone];
+                        setBubbleText(arr[Math.floor(Math.random() * arr.length)]);
+                    }
+                }
+            }, [tab, action, timeZone, data.isSick, data.fatigue, data.day]);
 
             useEffect(() => {
-                localStorage.setItem('todotchi_first', JSON.stringify(isFirstPlay));
-                localStorage.setItem('todotchi_name', name);
-                localStorage.setItem('todotchi_day', day.toString());
-                localStorage.setItem('todotchi_stats', JSON.stringify(stats));
-                localStorage.setItem('todotchi_todos', JSON.stringify(todos));
-                localStorage.setItem('todotchi_habits', JSON.stringify(habits));
-                localStorage.setItem('todotchi_inv', JSON.stringify(inventory));
-                localStorage.setItem('todotchi_equip', JSON.stringify(equippedItems));
-                localStorage.setItem('todotchi_ency', JSON.stringify(encyclopedia));
-                localStorage.setItem('todotchi_last_date', lastDate);
-                localStorage.setItem('todotchi_sick', JSON.stringify(isSick));
-            }, [isFirstPlay, name, day, stats, todos, habits, inventory, equippedItems, encyclopedia, lastDate, isSick]);
+                localStorage.setItem('todotchi_save', JSON.stringify(data));
+            }, [data]);
 
             useEffect(() => {
                 const checkMidnight = () => {
                     const todayStr = new Date().toDateString();
-                    if (lastDate !== todayStr) {
-                        setLastDate(todayStr);
-                        if (!isFirstPlay && !ending && day < MAX_DAYS) {
-                            processMidnightDayChange();
-                        }
+                    if (data.lastDate !== todayStr && !data.firstPlay && !ending && data.day <= MAX_DAYS) {
+                        processMidnightDayChange();
                     }
                 };
                 checkMidnight();
-                const timer = setInterval(checkMidnight, 60000);
+                const timer = setInterval(checkMidnight, 30000);
                 return () => clearInterval(timer);
-            }, [lastDate, isFirstPlay, ending, day, todos, stats, habits, dailyGains, inventory, equippedItems]);
+            }, [data.lastDate, data.firstPlay, ending, data.day, data]);
 
+            useEffect(() => { baseZoomRef.current = calZoom; }, [calZoom]);
+            useEffect(() => {
+                const el = calRef.current;
+                if (!el) return;
+
+                let pinchStartDist = 0;
+
+                const onWheel = (e) => {
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        setCalZoom(z => Math.min(Math.max(0.7, z - e.deltaY * 0.005), 3));
+                    }
+                };
+
+                const onTouchStart = (e) => {
+                    if (e.touches.length === 2) {
+                        pinchStartDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                    }
+                };
+
+                const onTouchMove = (e) => {
+                    if (e.touches.length === 2 && pinchStartDist > 0) {
+                        e.preventDefault();
+                        const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                        const scale = dist / pinchStartDist;
+                        setCalZoom(Math.min(Math.max(0.7, baseZoomRef.current * scale), 3));
+                    }
+                };
+
+                const onTouchEnd = (e) => {
+                    if (e.touches.length < 2) pinchStartDist = 0;
+                };
+
+                el.addEventListener('wheel', onWheel, { passive: false });
+                el.addEventListener('touchstart', onTouchStart, { passive: false });
+                el.addEventListener('touchmove', onTouchMove, { passive: false });
+                el.addEventListener('touchend', onTouchEnd);
+
+                return () => {
+                    el.removeEventListener('wheel', onWheel);
+                    el.removeEventListener('touchstart', onTouchStart);
+                    el.removeEventListener('touchmove', onTouchMove);
+                    el.removeEventListener('touchend', onTouchEnd);
+                };
+            }, [todoTab, tab]);
+
+            const generateDailyMission = () => DAILY_MISSIONS[Math.floor(Math.random() * DAILY_MISSIONS.length)];
+            
             const processMidnightDayChange = () => {
-                const uncompleted = todos.filter(t => !t.isDone).length;
-                let penalty = uncompleted * 5; 
-                let gains = { ...dailyGains }; 
-                let rewards = [];
-                let hLogs = [];
-                
-                if (uncompleted >= 2) setIsSick(true);
+                setData(prev => {
+                    let next = { ...prev, lastDate: new Date().toDateString(), randomEvent: null };
+                    
+                    const uncompleted = next.todos.filter(t => !t.isDone).length;
+                    let penalty = uncompleted * 5;
+                    if (uncompleted >= 2 || next.fatigue >= 90 || next.stats.hap <= 20) {
+                        if (Math.random() > 0.5) next.isSick = true;
+                    }
+                    if (penalty > 0) next.stats.hap = Math.max(0, next.stats.hap - penalty);
 
-                if (penalty > 0) {
-                    triggerFeedback('penalty');
-                    setStats(prev => ({ ...prev, hap: Math.max(0, prev.hap - penalty) }));
-                } else {
-                    triggerFeedback('success');
-                }
-                setPenaltyAmt(penalty);
-
-                let newHabits = [];
-                habits.forEach(h => {
-                    const nextPassed = h.passedDays + 1;
-                    const todayChecked = h.checkedToday;
-
-                    if (todayChecked) {
-                        hLogs.push(`습관 '${h.title}' ${nextPassed}일차 완료 (성실+1)`);
+                    const isComboMaintained = next.dailyMissionCompleted || (next.todos.length > 0 && uncompleted === 0);
+                    if (isComboMaintained) {
+                        next.combo += 1;
+                        next.bestCombo = Math.max(next.bestCombo, next.combo);
+                        if (next.combo % 3 === 0) next.coins += 50;
+                    } else if (next.todos.length > 0 || next.dailyMission) {
+                        next.combo = 0;
                     }
 
-                    if (nextPassed >= h.goalDays) {
-                        if (h.checkedCount >= Math.ceil(h.goalDays * 0.7)) { 
-                            triggerFeedback('success');
-                            setStats(prev => {
-                                let ns = { ...prev };
-                                Object.keys(ns).forEach(k => ns[k] = Math.min(100, ns[k] + 2));
-                                return ns;
-                            });
-                            gains['올스탯'] = (gains['올스탯'] || 0) + 2;
-
-                            const unowned = ALL_ITEMS.filter(item => !inventory.some(i => i.id === item.id) && !equippedItems.some(i => i.id === item.id));
-                            const rewardItem = unowned.length > 0 ? unowned[Math.floor(Math.random() * unowned.length)] : ALL_ITEMS[Math.floor(Math.random() * ALL_ITEMS.length)];
-                            
-                            if (!inventory.some(i => i.id === rewardItem.id) && !equippedItems.some(i => i.id === rewardItem.id)) {
-                                setInventory(inv => [...inv, rewardItem]);
+                    let habitResults = [];
+                    let newHabits = [];
+                    next.habits.forEach(h => {
+                        const nextPassed = h.passedDays + 1;
+                        if (nextPassed >= h.goalDays) {
+                            const successRate = h.checkedCount / h.goalDays;
+                            if (successRate >= 0.7) {
+                                habitResults.push({ name: h.title, status: 'success' });
+                                Object.keys(next.stats).forEach(k => { if(k!=='fatigue') next.stats[k] = Math.min(100, next.stats[k] + 2); });
+                                next.coins += 100;
+                            } else {
+                                habitResults.push({ name: h.title, status: 'fail' });
                             }
-                            rewards.push({ name: h.title, status: 'success', item: rewardItem });
                         } else {
-                            rewards.push({ name: h.title, status: 'fail' });
+                            newHabits.push({ ...h, passedDays: nextPassed, checkedToday: false });
                         }
-                    } else {
-                        newHabits.push({
-                            ...h,
-                            passedDays: nextPassed,
-                            checkedCount: todayChecked ? h.checkedCount + 1 : h.checkedCount,
-                            checkedToday: false
-                        });
-                    }
-                });
+                    });
+                    next.habits = newHabits;
 
-                setHabits(newHabits);
-                setDailyGains(gains);
-                setDailyRewards(rewards);
-                setDailyHabitLogs(hLogs);
-                setShowSummary(true);
+                    if (Math.random() < 0.3) {
+                        const ev = RANDOM_EVENTS[Math.floor(Math.random() * RANDOM_EVENTS.length)];
+                        ev.apply(next);
+                        next.randomEvent = ev;
+                    }
+
+                    const prevStage = getStage(next.day);
+                    next.day += 1;
+                    const nextStage = getStage(next.day);
+                    
+                    if (prevStage !== nextStage && next.day <= MAX_DAYS) {
+                        next.showEvolution = nextStage;
+                        if (nextStage === 'child') {
+                            const { int, str, emo, soc, life, dil } = next.stats;
+                            const maxStat = Math.max(int, str, emo, soc, life, dil);
+                            if (maxStat < 30) next.charType = 'normal';
+                            else if (maxStat === int) next.charType = 'smart';
+                            else if (maxStat === str) next.charType = 'macho';
+                            else if (maxStat === emo) next.charType = 'emo';
+                            else if (maxStat === soc) next.charType = 'social';
+                            else next.charType = 'normal';
+                        }
+                    }
+
+                    next.todos = next.todos.filter(t => !t.isDone); 
+                    next.dailyMission = generateDailyMission();
+                    next.dailyMissionCompleted = false;
+                    next.dailyMissionProgress = 0;
+
+                    setSummaryData({ day: prev.day, penalty, combo: next.combo, habitResults, event: next.randomEvent });
+                    
+                    if (next.day > MAX_DAYS) {
+                        setTimeout(() => triggerEnding(next), 0);
+                    } else {
+                        setTimeout(() => { setShowSummary(true); triggerFeedback(penalty > 0 ? 'penalty' : 'success'); }, 0);
+                    }
+                    
+                    return next;
+                });
             };
 
-            const handleNav = (newTab) => { triggerFeedback('click'); setTab(newTab); };
+            const triggerEnding = (finalData) => {
+                const matchedEnding = ENDINGS.find(e => e.condition(finalData.stats, finalData.actionCounts, finalData)) || ENDINGS[ENDINGS.length - 1];
+                setEnding(matchedEnding);
+                
+                if (!finalData.encyclopedia.some(e => e.id === matchedEnding.id)) {
+                    finalData.encyclopedia.push({ ...matchedEnding, date: new Date().toDateString(), stats: finalData.stats });
+                }
+                setData(finalData);
+            };
 
             const addTodo = () => {
                 if (!newTodoTitle.trim()) return;
                 triggerFeedback('click');
-                setTodos([{ id: Date.now().toString(), title: newTodoTitle, category: newTodoCat, isDone: false }, ...todos]);
+                setData(prev => ({
+                    ...prev,
+                    todos: [{ id: Date.now().toString(), title: newTodoTitle, category: newTodoCat, isDone: false }, ...prev.todos]
+                }));
                 setNewTodoTitle('');
             };
 
             const addHabit = () => {
                 if (!habitTitle.trim()) return;
                 triggerFeedback('click');
-                const newH = {
-                    id: Date.now().toString(),
-                    title: habitTitle,
-                    goalDays: habitGoalDays,
-                    category: habitCategory,
-                    passedDays: 0,
-                    checkedCount: 0,
-                    checkedToday: false
-                };
-                setHabits([...habits, newH]);
-                setHabitTitle('');
-                setShowHabitModal(false);
-            };
-
-            const checkHabitToday = (id) => {
-                const habit = habits.find(h => h.id === id);
-                if (!habit || habit.checkedToday) return;
-
-                triggerFeedback('success');
-                
-                const newStats = { ...stats, dil: Math.min(100, stats.dil + 1) };
-                const dGains = { ...dailyGains, dil: (dailyGains.dil || 0) + 1 };
-                
-                setStats(newStats);
-                setDailyGains(dGains);
-
-                setHabits(habits.map(h => {
-                    if (h.id === id) {
-                        return { ...h, checkedCount: h.checkedCount + 1, checkedToday: true };
-                    }
-                    return h;
+                setData(prev => ({
+                    ...prev,
+                    habits: [...prev.habits, { id: Date.now().toString(), title: habitTitle, goalDays: habitGoal, category: habitCat, passedDays: 0, checkedCount: 0, checkedToday: false }]
                 }));
-                
-                setIsAnimating(true);
-                setTimeout(() => setIsAnimating(false), 600);
-            };
-
-            const openRetryHabitModal = (habitName) => {
-                triggerFeedback('click');
-                setHabitTitle(habitName);
-                setShowHabitModal(true);
+                setHabitTitle(''); setShowHabitModal(false);
             };
 
             const completeTodo = (id) => {
-                const todo = todos.find(t => t.id === id);
-                if (!todo || todo.isDone) return;
+                triggerFeedback('coin');
+                setIsAnimating(true); 
+                setTimeout(() => setIsAnimating(false), 500);
 
-                const text = todo.title;
-                const cat = todo.category;
-                let matchedAction = null;
+                setData(prev => {
+                    const todo = prev.todos.find(t => t.id === id);
+                    if (!todo || todo.isDone) return prev;
 
-                const isHealing = cat === '휴식' || /약|병원|주사/.test(text);
-                let willHeal = false;
+                    let next = { 
+                        ...prev, 
+                        stats: { ...prev.stats }, 
+                        actionCounts: { ...prev.actionCounts },
+                        todos: prev.todos.map(t => t.id === id ? { ...t, isDone: true } : t)
+                    };
+                    
+                    next.coins += 10;
+                    
+                    const cat = todo.category;
+                    const eff = CATEGORIES[cat];
+                    next.actionCounts[cat] = (next.actionCounts[cat] || 0) + 1;
+                    
+                    Object.keys(eff).forEach(k => {
+                        if (k === 'fatigue') {
+                            next.fatigue = Math.max(0, Math.min(100, next.fatigue + eff.fatigue));
+                        } else {
+                            next.stats[k] = Math.min(100, next.stats[k] + eff[k]);
+                        }
+                    });
 
-                if (isHealing && isSick) {
-                    matchedAction = 'heal';
-                    willHeal = true;
-                    setIsSick(false); 
-                    triggerFeedback('success');
-                } else {
-                    triggerFeedback('success');
-                    if (/[밥아침점심저녁간식쌀]/.test(text) || text.includes('먹기')) matchedAction = 'eat';
-                    else if (/공부|독서|인강|과제|숙제|책/.test(text)) matchedAction = 'study';
-                    else if (/씻기|샤워|목욕|세수|양치/.test(text)) matchedAction = 'wash';
-                }
+                    let newAction = null;
+                    
+                    if (next.isSick && (cat === '휴식' || /약|병원|치유|회복/.test(todo.title))) {
+                        next.isSick = false;
+                        newAction = 'heal';
+                    } else {
+                        if (/[밥식사먹기간식쌀]/.test(todo.title) || todo.title.includes('먹기')) newAction = 'eat';
+                        else if (/[씻목욕욕실샤워세안세수]/.test(todo.title) || todo.title.includes('씻기')) newAction = 'wash';
+                        else if (/[잠취침졸려자기수면]/.test(todo.title)) newAction = 'sleep';
+                        else if (/[공부독서인강과제숙제책]/.test(todo.title)) newAction = 'study';
+                    }
 
-                if (matchedAction && stage === 'adult') {
-                    setAction(matchedAction);
-                    setTab('home');
-                    if (window.actionTimer) clearTimeout(window.actionTimer);
-                    window.actionTimer = setTimeout(() => setAction(null), 7000);
-                }
+                    let missionCompletedNow = false;
+                    if (next.dailyMission && !next.dailyMissionCompleted) {
+                        const dm = next.dailyMission;
+                        if (dm.id === 'm1' || (dm.id === 'm2' && cat === '공부') || (dm.id === 'm3' && cat === '운동') || (dm.id === 'm4' && cat === '휴식')) {
+                            next.dailyMissionProgress = (next.dailyMissionProgress || 0) + 1;
+                            if (next.dailyMissionProgress >= dm.target) {
+                                next.dailyMissionCompleted = true;
+                                missionCompletedNow = true;
+                                dm.onComplete(next);
+                            }
+                        }
+                    }
 
-                const gains = CATEGORIES[todo.category];
-                const newStats = { ...stats };
-                const dGains = { ...dailyGains };
-                
-                Object.keys(gains).forEach(k => {
-                    let boost = gains[k];
-                    newStats[k] = Math.min(100, newStats[k] + boost);
-                    dGains[k] = (dGains[k] || 0) + boost;
+                    if (newAction || missionCompletedNow) {
+                        setTimeout(() => {
+                            if (missionCompletedNow) playSound('success');
+                            if (newAction) setAction(newAction);
+                            if (window.actionTimer) clearTimeout(window.actionTimer);
+                            window.actionTimer = setTimeout(() => setAction(null), 5000);
+                            setTab('home');
+                        }, 0);
+                    }
+
+                    return next;
                 });
-
-                setStats(newStats);
-                setDailyGains(dGains);
-                
-                setTodos(todos.map(t => t.id === id ? { ...t, isDone: true } : t));
-                setIsAnimating(true);
-                setTimeout(() => setIsAnimating(false), 600);
             };
 
-            const toggleEquipItem = (item) => {
-                triggerFeedback('click');
-                if (equippedItems.some(i => i.id === item.id)) {
-                    setEquippedItems(equippedItems.filter(i => i.id !== item.id));
-                    setInventory([...inventory, item]);
-                } else {
-                    setInventory(inventory.filter(i => i.id !== item.id));
-                    setEquippedItems([...equippedItems, item]);
-                }
-            };
+            const checkHabit = (id) => {
+                triggerFeedback('success');
+                setIsAnimating(true); 
+                setTimeout(() => setIsAnimating(false), 500);
 
-            const triggerDevSkip = () => {
-                triggerFeedback('click');
-                if (day >= MAX_DAYS) {
-                    const finalEnding = getEnding(stats);
-                    setEnding(finalEnding);
-                    if (!encyclopedia.find(e => e.id === finalEnding.id)) {
-                        setEncyclopedia([...encyclopedia, { ...finalEnding, date: new Date().toDateString(), stats }]);
+                setData(prev => {
+                    const habit = prev.habits.find(x => x.id === id);
+                    if (!habit || habit.checkedToday) return prev;
+
+                    let next = { 
+                        ...prev, 
+                        stats: { ...prev.stats },
+                        habits: prev.habits.map(x => x.id === id ? { ...x, checkedCount: x.checkedCount + 1, checkedToday: true } : x)
+                    };
+                    
+                    next.stats.dil = Math.min(100, next.stats.dil + 1);
+                    next.coins += 5;
+
+                    let missionCompletedNow = false;
+                    if (next.dailyMission && next.dailyMission.id === 'm5' && !next.dailyMissionCompleted) {
+                        next.dailyMissionProgress = (next.dailyMissionProgress || 0) + 1;
+                        next.dailyMissionCompleted = true;
+                        missionCompletedNow = true;
+                        next.dailyMission.onComplete(next);
                     }
-                } else {
-                    processMidnightDayChange();
-                }
-            };
 
-            const startNextDay = () => {
-                triggerFeedback('click');
-                if (day >= MAX_DAYS) {
-                    const finalEnding = getEnding(stats);
-                    setEnding(finalEnding);
-                    if (!encyclopedia.find(e => e.id === finalEnding.id)) {
-                        setEncyclopedia([...encyclopedia, { ...finalEnding, date: new Date().toDateString(), stats }]);
+                    if (missionCompletedNow) {
+                        setTimeout(() => {
+                            playSound('success');
+                            setTab('home');
+                        }, 0);
                     }
-                } else {
-                    setDay(day + 1);
-                    setDailyGains({});
-                    setDailyRewards([]);
-                    setDailyHabitLogs([]);
-                    setPenaltyAmt(0);
-                    setTodos(prev => prev.filter(t => !t.isDone)); 
-                }
-                setShowSummary(false);
+
+                    return next;
+                });
             };
 
-            const resetGame = (hardReset = false) => {
+            const buyItem = (item) => {
+                if (data.coins < item.price) return alert('코인이 부족합니다.');
+                if (data.inventory.some(i => i.id === item.id) || data.equippedItems.some(i => i.id === item.id)) return alert('이미 보유중입니다.');
+                triggerFeedback('coin');
+                setData(prev => ({ ...prev, coins: prev.coins - item.price, inventory: [...prev.inventory, item] }));
+            };
+
+            const toggleEquip = (item) => {
                 triggerFeedback('click');
-                if (hardReset) {
-                    setEncyclopedia([]);
-                    setInventory([]);
-                    setEquippedItems([]);
-                }
-                setIsFirstPlay(true); setName(''); setDay(1);
-                setIsSick(false); 
-                setStats({ int: 10, str: 10, emo: 10, soc: 10, life: 10, dil: 10, hap: 50 });
-                setTodos([]); setHabits([]); setDailyGains({}); setDailyRewards([]); setDailyHabitLogs([]); setEnding(null); setTab('home'); setPenaltyAmt(0);
-                setLastDate(new Date().toDateString());
+                setData(prev => {
+                    const isEquipped = prev.equippedItems.some(i => i.id === item.id);
+                    if (isEquipped) {
+                        return { ...prev, equippedItems: prev.equippedItems.filter(i => i.id !== item.id), inventory: [...prev.inventory, item] };
+                    } else {
+                        return { ...prev, inventory: prev.inventory.filter(i => i.id !== item.id), equippedItems: [...prev.equippedItems, item] };
+                    }
+                });
             };
 
-            const themeClass = isNight ? 'theme-night' : 'theme-day';
+            const hardReset = () => {
+                if (window.confirm('정말 모든 데이터를 삭제하시겠습니까? 복구할 수 없습니다.')) {
+                    localStorage.removeItem('todotchi_save');
+                    window.location.reload();
+                }
+            };
+            
+            const exportSave = () => {
+                const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = 'todotchi_save.json'; a.click();
+            };
 
-            if (isFirstPlay) {
+            const importSave = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try { const parsed = JSON.parse(ev.target.result); if(parsed.version) { setData(parsed); alert('복원 성공!'); } } 
+                    catch(err) { alert('잘못된 파일입니다.'); }
+                };
+                reader.readAsText(file);
+            };
+
+            const prevMonthBtn = () => {
+                triggerFeedback('click');
+                if (calMonth === 1) { setCalMonth(12); setCalYear(y => y - 1); }
+                else { setCalMonth(m => m - 1); }
+            };
+            const nextMonthBtn = () => {
+                triggerFeedback('click');
+                if (calMonth === 12) { setCalMonth(1); setCalYear(y => y + 1); }
+                else { setCalMonth(m => m + 1); }
+            };
+
+            const isEditableDate = (dateStr) => {
+                if (!data.gameStartDate || ending || data.day > MAX_DAYS) return false;
+                const targetDate = new Date(dateStr);
+                const startDate = new Date(data.gameStartDate);
+                const diffDays = Math.floor((targetDate - startDate) / (1000 * 60 * 60 * 24));
+                return diffDays >= 0 && diffDays < MAX_DAYS; 
+            };
+
+            const openCalModal = (d, mode) => {
+                const dateStr = `${calYear}-${String(calMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                setSelectedCalDate(dateStr);
+                setCalEventEndDate(dateStr);
+                setCalEventTitle('');
+                setCalModalMode(mode);
+            };
+
+            const touchTimerRef = useRef(null);
+            const isPressFiredRef = useRef(false);
+
+            const onCellPointerDown = (e, d) => {
+                if(!d) return;
+                isPressFiredRef.current = false;
+                touchTimerRef.current = setTimeout(() => {
+                    isPressFiredRef.current = true;
+                    triggerFeedback('success'); 
+                    openCalModal(d, 'add');
+                }, 500);
+            };
+
+            const onCellPointerUp = () => {
+                if(touchTimerRef.current) clearTimeout(touchTimerRef.current);
+            };
+
+            const onCellClick = (e, d) => {
+                if(!d || isPressFiredRef.current) return;
+                triggerFeedback('click');
+                openCalModal(d, 'view');
+            };
+
+            const onCellDoubleClick = (e, d) => {
+                if(!d) return;
+                if(touchTimerRef.current) clearTimeout(touchTimerRef.current);
+                triggerFeedback('click');
+                openCalModal(d, 'add');
+            };
+
+            const addCalEvent = () => {
+                if(!calEventTitle.trim()) return;
+                if(calEventEndDate < selectedCalDate) {
+                    alert("종료일은 시작일보다 빠를 수 없습니다."); return;
+                }
+                triggerFeedback('click');
+                setData(prev => ({
+                    ...prev,
+                    calendarEvents: [...prev.calendarEvents, {
+                        id: Date.now().toString(),
+                        title: calEventTitle,
+                        startDate: selectedCalDate,
+                        endDate: calEventEndDate,
+                        color: calEventColor
+                    }]
+                }));
+                setCalEventTitle('');
+            };
+
+            const deleteCalEvent = (id) => {
+                triggerFeedback('click');
+                setData(prev => ({
+                    ...prev,
+                    calendarEvents: prev.calendarEvents.filter(ev => ev.id !== id)
+                }));
+            };
+
+            const firstDayOfMonth = new Date(calYear, calMonth - 1, 1).getDay();
+            const daysInMonth = new Date(calYear, calMonth, 0).getDate();
+            const calCells = [];
+            for(let i=0; i<firstDayOfMonth; i++) calCells.push(null);
+            for(let i=1; i<=daysInMonth; i++) calCells.push(i);
+            while(calCells.length % 7 !== 0) calCells.push(null);
+
+            if (data.firstPlay) {
                 return (
-                    <div className={`screen-bezel ${themeClass}`}><div className="lcd-screen" style={{ justifyContent: 'center', padding: '20px', textAlign: 'center' }}>
-                        <h2>새 생명 탄생</h2>
+                    <div className="screen-bezel theme-morning"><div className="lcd-screen" style={{ padding: '20px', textAlign: 'center', justifyContent: 'center' }}>
+                        <h2>새 생명 탄생 🐣</h2>
                         <p>이름을 입력하세요</p>
-                        <input value={name} onChange={e => setName(e.target.value)} maxLength={6} placeholder="이름 (최대 6자)" />
-                        <button className="btn" onClick={() => { if(name.trim()) { triggerFeedback('click'); setIsFirstPlay(false); }}}>시작(A)</button>
+                        <input value={data.name} onChange={e => setData({...data, name: e.target.value})} maxLength={6} placeholder="이름 (최대 6자)" />
+                        <button className="btn" onClick={() => { 
+                            if(data.name.trim()) { 
+                                triggerFeedback('click'); 
+                                setData({...data, firstPlay: false, dailyMission: generateDailyMission(), gameStartDate: getYYYYMMDD(new Date())}); 
+                            }
+                        }}>시작(A)</button>
                     </div></div>
                 );
             }
 
             if (ending) {
                 return (
-                    <div className={`screen-bezel ${themeClass}`}>
-                        <div className="lcd-screen" style={{ padding: '0px', textAlign: 'center', display: 'flex', flexDirection: 'column' }}>
-                            <div className="header" style={{ marginBottom: '0' }}>엔딩 달성! : {ending.name}</div>
-                            
-                            <RoomAndCharacter stats={stats} day={30} isAnimating={false} action={null} speech={`...엔딩을 맞이했습니다!`} isNight={isNight} isSick={false} equippedItems={equippedItems} />
-                            
-                            <div className="panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '15px' }}>
-                                <h3 style={{ margin: '5px 0', borderBottom: '2px solid', paddingBottom: '5px' }}>{ending.desc}</h3>
-                                
-                                <div className="ending-story">
-                                    {ending.story}
-                                </div>
-
-                                <button className="btn" style={{ marginTop: 'auto', width: '100%' }} onClick={() => resetGame(false)}>새 시작(A)</button>
-                            </div>
-                        </div>
-                    </div>
-                );
-            }
-
-            if (showSummary) {
-                return (
-                    <div className={`screen-bezel ${themeClass}`}><div className="lcd-screen" style={{ padding: '20px', display:'flex', flexDirection:'column' }}>
-                        <h2 style={{ textAlign: 'center', marginBottom:'15px' }}>DAY {day} 결산</h2>
-                        <div className="panel" style={{ flex: 1, overflowY:'auto', padding:'0' }}>
-                            
-                            <div style={{fontWeight:'bold', marginBottom:'10px', fontSize:'15px'}}>[당일 적립 스탯]</div>
-                            
-                            {Object.entries(dailyGains).length === 0 && penaltyAmt === 0 && dailyHabitLogs.length === 0 ? 
-                                <p style={{textAlign: 'center', marginTop: '15px'}}>아무것도 안 한 하루...</p> : 
-                                Object.entries(dailyGains).map(([key, val]) => (
-                                    <p key={key} style={{fontSize: '16px', margin:'6px 0', fontWeight:'bold'}}>&gt; {STAT_NAMES[key] || key} +{val}</p>
-                                ))
-                            }
-                            
-                            {dailyHabitLogs.map((log, idx) => (
-                                <p key={`log-${idx}`} style={{fontSize: '13px', margin:'4px 0', color: 'var(--lcd-pixel)', paddingLeft:'10px'}}>
-                                    ↳ {log}
-                                </p>
-                            ))}
-
-                            {penaltyAmt > 0 && <p style={{fontSize: '15px', color: 'var(--lcd-pixel)', marginTop: '15px', fontWeight:'bold'}}>⚠️ 미완료 패널티!<br/>&gt; 행복 -{penaltyAmt}</p>}
-
-                            {dailyRewards.length > 0 && (
-                                <div style={{marginTop:'20px', borderTop:'2px dashed var(--lcd-pixel)', paddingTop:'15px'}}>
-                                    <div style={{fontWeight:'bold', marginBottom:'10px', fontSize:'15px'}}>[습관 챌린지 결과]</div>
-                                    {dailyRewards.map((dr, idx) => (
-                                        <div key={idx} style={{fontSize:'14px', margin:'8px 0', lineHeight:'1.5'}}>
-                                            {dr.status === 'success' ? 
-                                                `🌟 '${dr.name}' 달성!\n(올스탯 +2 & 아이템 획득)` : 
-                                                <span>
-                                                    ❌ '{dr.name}' 실패... <button className="btn" style={{padding:'4px 8px', minHeight:'24px', marginLeft:'5px'}} onClick={() => openRetryHabitModal(dr.name)}>재도전?</button>
-                                                </span>
-                                            }
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            <div style={{ marginTop: '25px', padding: '15px', border: '2px dashed var(--lcd-pixel)', borderRadius: '10px', fontSize: '13px', lineHeight: '1.6', textAlign: 'center', backgroundColor:'rgba(0,0,0,0.05)' }}>
-                                {getSummaryEncouragement(penaltyAmt, Object.keys(dailyGains).length).split('\n').map((line, i) => <span key={i}>{line}<br/></span>)}
-                            </div>
-
-                        </div>
-                        <button className="btn" style={{ width: '100%', marginTop: '15px' }} onClick={startNextDay}>다음날(A)</button>
+                    <div className="screen-bezel theme-morning"><div className="lcd-screen" style={{ padding: '20px', textAlign: 'center', overflowY:'auto' }}>
+                        <h2>엔딩 달성!</h2>
+                        <h3>{ending.name}</h3>
+                        <RoomComponent data={{...data, day:30}} isAnimating={false} action={null} timeZone="morning" />
+                        <div style={{ padding: '15px', border: '2px dashed var(--lcd-pixel)', margin: '15px 0', whiteSpace: 'pre-wrap', fontSize:'13px', textAlign:'left', lineHeight:'1.5' }}>{ending.story}</div>
+                        <button className="btn" style={{ width: '100%' }} onClick={() => {
+                            triggerFeedback('click');
+                            setData(prev => ({
+                                ...prev, 
+                                firstPlay: true, 
+                                day: 1, 
+                                charType: 'normal',
+                                stats: {int:10,str:10,emo:10,soc:10,life:10,dil:10,hap:50}, 
+                                fatigue: 0, 
+                                todos: [], 
+                                habits: [], 
+                                combo: 0, 
+                                actionCounts: {공부:0,운동:0,취미:0,사교:0,생활:0,업무:0,휴식:0},
+                                isSick: false,
+                                randomEvent: null,
+                                showEvolution: null,
+                                dailyMissionCompleted: false,
+                                dailyMissionProgress: 0,
+                                gameStartDate: getYYYYMMDD(new Date())
+                            }));
+                            setEnding(null);
+                            setTab('home');
+                        }}>새로운 삶 시작</button>
                     </div></div>
                 );
             }
 
-            const timeStr = currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
-
+            const timeStr = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const themeClass = `theme-${timeZone}`;
+            
             return (
                 <div className={`screen-bezel ${themeClass}`}>
                     <div className="lcd-screen">
                         <div className="header">
-                            DAY {day} / {MAX_DAYS}
-                            <div className="clock">{timeStr}</div>
+                            <div>DAY {data.day}/{MAX_DAYS}</div>
+                            <div className="header-stats"><span>💰 {data.coins}G</span> <span>{timeStr}</span></div>
                         </div>
                         
                         <div className="main-content">
                             {tab === 'home' && (
                                 <div className="scrollable">
-                                    <RoomAndCharacter stats={stats} day={day} isAnimating={isAnimating} action={action} speech={speech} isNight={isNight} isSick={isSick} equippedItems={equippedItems} />
-                                    <div className="panel" style={{ borderBottom: 'none', padding: '20px 15px' }}>
-                                        <div style={{ textAlign: 'center', marginBottom: '15px', fontSize: '15px', fontWeight: 'bold' }}>[{name} 상태]</div>
-                                        <ProgressBar label="행복" value={stats.hap} />
-                                        <ProgressBar label="지능" value={stats.int} />
-                                        <ProgressBar label="체력" value={stats.str} />
-                                        <ProgressBar label="감성" value={stats.emo} />
-                                        <ProgressBar label="사교" value={stats.soc} />
-                                        <ProgressBar label="생활" value={stats.life} />
-                                        <ProgressBar label="성실" value={stats.dil} />
+                                    <RoomComponent data={data} isAnimating={isAnimating} action={action} speech={bubbleText} timeZone={timeZone} />
+                                    
+                                    <div className="panel" style={{ padding: '15px' }}>
+                                        <div style={{ background: 'var(--lcd-pixel)', color: 'var(--lcd-bg)', padding: '10px', borderRadius: '4px', marginBottom: '15px' }}>
+                                            <div style={{ fontSize: '11px', marginBottom: '4px' }}>🌟 오늘의 미션</div>
+                                            <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{data.dailyMission?.title}</div>
+                                            <div style={{ fontSize: '12px', marginTop: '6px', display: 'flex', justifyContent: 'space-between' }}>
+                                                <span>진행: {data.dailyMissionCompleted ? '완료!' : `${data.dailyMissionProgress||0} / ${data.dailyMission?.target}`}</span>
+                                                <span>보상: {data.dailyMission?.rewardText}</span>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '15px' }}>[{data.name} 상태]</div>
+                                        <ProgressBar label="행복" value={data.stats.hap} />
+                                        <ProgressBar label="피로도" value={data.fatigue} colorClass={data.fatigue > 80 ? 'animate-tremble' : ''} />
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 15px', marginTop: '10px' }}>
+                                            <ProgressBar label="지능" value={data.stats.int} /><ProgressBar label="체력" value={data.stats.str} />
+                                            <ProgressBar label="감성" value={data.stats.emo} /><ProgressBar label="사교" value={data.stats.soc} />
+                                            <ProgressBar label="생활" value={data.stats.life} /><ProgressBar label="성실" value={data.stats.dil} />
+                                        </div>
                                     </div>
                                 </div>
                             )}
 
                             {tab === 'todo' && (
                                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                                    <div style={{ padding: '15px', flexShrink: 0, borderBottom: '4px solid var(--lcd-pixel)' }}>
-                                        <input placeholder="할 일 입력 (예: 약 먹기)" value={newTodoTitle} onChange={e => setNewTodoTitle(e.target.value)} enterKeyHint="done" />
-                                        <div style={{ display: 'flex', gap: '5px' }}>
-                                            <select value={newTodoCat} onChange={e => setNewTodoCat(e.target.value)} style={{ flex: 2, marginBottom: 0 }}>
-                                                {Object.keys(CATEGORIES).map(c => <option key={c} value={c}>{c}</option>)}
-                                            </select>
-                                            <button className="btn" style={{ flex: 1, margin: 0 }} onClick={addTodo}>할일 추가</button>
-                                        </div>
-                                        <button className="btn" style={{ width: '100%', marginTop: '10px' }} onClick={() => { setHabitTitle(''); setShowHabitModal(true); }}>+ 새로운 습관 만들기</button>
+                                    <div style={{ display: 'flex', borderBottom: '3px solid var(--lcd-pixel)' }}>
+                                        <div className="nav-item" style={{ padding: '10px 0', background: todoTab==='today'?'var(--lcd-pixel)':'', color: todoTab==='today'?'var(--lcd-bg)':'' }} onClick={() => {triggerFeedback('click'); setTodoTab('today')}}>오늘 할일</div>
+                                        <div className="nav-item" style={{ padding: '10px 0', borderRight:'none', background: todoTab==='calendar'?'var(--lcd-pixel)':'', color: todoTab==='calendar'?'var(--lcd-bg)':'' }} onClick={() => {triggerFeedback('click'); setTodoTab('calendar')}}>달력</div>
                                     </div>
+                                    
+                                    {todoTab === 'today' && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                                            <div style={{ padding: '15px', flexShrink: 0, borderBottom: '3px solid var(--lcd-pixel)' }}>
+                                                <input placeholder="할 일 입력 (예: 치유)" value={newTodoTitle} onChange={e => setNewTodoTitle(e.target.value)} enterKeyHint="done" />
+                                                <div style={{ display: 'flex', gap: '5px' }}>
+                                                    <select value={newTodoCat} onChange={e => setNewTodoCat(e.target.value)} style={{ flex: 2, marginBottom: 0 }}>
+                                                        {Object.keys(CATEGORIES).map(c => <option key={c} value={c}>{c}</option>)}
+                                                    </select>
+                                                    <button className="btn" style={{ flex: 1, margin: 0 }} onClick={addTodo}>추가</button>
+                                                </div>
+                                                <button className="btn" style={{ width: '100%', marginTop: '10px' }} onClick={() => setShowHabitModal(true)}>+ 습관 챌린지 만들기</button>
+                                            </div>
 
-                                    <div className="scrollable" style={{ padding: '15px' }}>
-                                        {habits.length > 0 && (
-                                            <div style={{marginBottom:'20px'}}>
-                                                <div style={{fontSize:'14px', fontWeight:'bold', marginBottom:'10px'}}>📌 진행 중인 습관</div>
-                                                {habits.map(h => (
-                                                    <div key={h.id} className="panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 8px', background:'rgba(0,0,0,0.05)', marginBottom:'8px' }}>
-                                                        <div>
-                                                            <span style={{ fontSize: '11px', display: 'block' }}>[{h.category}] {h.goalDays}일 챌린지</span>
-                                                            <span style={{ fontSize: '15px', fontWeight:'bold' }}>{h.title}</span>
-                                                            <span style={{ fontSize: '12px', display: 'block', marginTop:'4px' }}>진행: {h.passedDays}일째 (달성: {h.checkedCount}회)</span>
+                                            <div className="scrollable" style={{ padding: '15px' }}>
+                                                {data.habits.length > 0 && <div style={{marginBottom:'20px'}}>
+                                                    <div style={{fontSize:'13px', fontWeight:'bold', marginBottom:'8px'}}>📌 습관</div>
+                                                    {data.habits.map(h => (
+                                                        <div key={h.id} className="panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background:'rgba(0,0,0,0.05)', marginBottom:'6px', borderRadius:'4px' }}>
+                                                            <div>
+                                                                <span className="tag">D-{h.goalDays - h.passedDays} 남음</span>
+                                                                <div style={{ fontSize: '14px', fontWeight:'bold' }}>{h.title}</div>
+                                                                <div style={{ fontSize: '11px', marginTop:'4px' }}>진행률: {h.checkedCount}/{h.passedDays}</div>
+                                                            </div>
+                                                            <button className="btn" disabled={h.checkedToday} onClick={() => checkHabit(h.id)}>{h.checkedToday ? '완료' : '체크'}</button>
                                                         </div>
-                                                        <button className="btn" style={{ padding: '8px 12px', opacity: h.checkedToday ? 0.5 : 1 }} disabled={h.checkedToday} onClick={() => checkHabitToday(h.id)}>
-                                                            {h.checkedToday ? '완료' : '체크'}
-                                                        </button>
+                                                    ))}
+                                                </div>}
+
+                                                <div style={{fontSize:'13px', fontWeight:'bold', marginBottom:'8px'}}>📝 오늘 할 일</div>
+                                                {data.todos.length === 0 && <p style={{fontSize:'13px', opacity:0.7}}>할 일이 없습니다.</p>}
+                                                {data.todos.map(t => (
+                                                    <div key={t.id} className="panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', marginBottom:'6px', borderRadius:'4px' }}>
+                                                        <div style={{ textDecoration: t.isDone ? 'line-through' : 'none', opacity: t.isDone ? 0.5 : 1 }}>
+                                                            <span className="tag">{t.category}</span>
+                                                            <div style={{ fontSize: '14px' }}>{t.title}</div>
+                                                        </div>
+                                                        {!t.isDone && <button className="btn" onClick={() => completeTodo(t.id)}>완료</button>}
                                                     </div>
                                                 ))}
                                             </div>
-                                        )}
+                                        </div>
+                                    )}
 
-                                        <div style={{fontSize:'14px', fontWeight:'bold', marginBottom:'10px'}}>📝 오늘 할 일</div>
-                                        {todos.length === 0 && <p style={{textAlign: 'center', margin: '15px 0', fontSize:'14px'}}>오늘 할 일이 없습니다!</p>}
-                                        {todos.map(t => (
-                                            <div key={t.id} className="panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 8px', marginBottom:'8px' }}>
-                                                <div style={{ textDecoration: t.isDone ? 'line-through' : 'none', opacity: t.isDone ? 0.5 : 1 }}>
-                                                    <span style={{ fontSize: '12px', display: 'block', marginBottom: '4px' }}>[{t.category}]</span>
-                                                    <span style={{ fontSize: '15px', lineHeight: '1.3' }}>{t.title}</span>
-                                                </div>
-                                                {!t.isDone && <button className="btn" style={{ padding: '8px 14px' }} onClick={() => completeTodo(t.id)}>O</button>}
+                                    {todoTab === 'calendar' && (
+                                        <div style={{ padding: '15px', display: 'flex', flexDirection: 'column', height: '100%' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                                                <button className="btn" style={{padding:'4px 10px'}} onClick={prevMonthBtn}>&lt;</button>
+                                                <strong style={{fontSize:'16px'}}>{calYear}년 {calMonth}월</strong>
+                                                <button className="btn" style={{padding:'4px 10px'}} onClick={nextMonthBtn}>&gt;</button>
                                             </div>
-                                        ))}
-                                    </div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', fontWeight: 'bold', marginBottom: '10px', fontSize: '12px' }}>
+                                                <div style={{color:'#ff6b6b'}}>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div style={{color:'#54a0ff'}}>토</div>
+                                            </div>
+                                            
+                                            <div className="scrollable" ref={calRef} style={{ flex: 1, paddingBottom: '100px' }}>
+                                                <div style={{ 
+                                                    display: 'grid', 
+                                                    gridTemplateColumns: 'repeat(7, 1fr)', 
+                                                    borderLeft: '1px solid var(--lcd-pixel)', 
+                                                    borderTop: '1px solid var(--lcd-pixel)',
+                                                    backgroundColor: 'rgba(255,255,255,0.05)'
+                                                }}>
+                                                    {calCells.map((d, i) => {
+                                                        if (!d) return <div key={`empty-${i}`} style={{ borderRight: '1px solid var(--lcd-pixel)', borderBottom: '1px solid var(--lcd-pixel)' }}></div>;
+                                                        
+                                                        const dateStr = `${calYear}-${String(calMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                                                        const isToday = dateStr === getYYYYMMDD(new Date());
+                                                        
+                                                        const dayEvents = data.calendarEvents
+                                                            .filter(ev => dateStr >= ev.startDate && dateStr <= ev.endDate)
+                                                            .sort((a,b) => a.startDate.localeCompare(b.startDate) || a.id.localeCompare(b.id));
+                                                        
+                                                        return (
+                                                            <div 
+                                                                key={`day-${d}`} 
+                                                                onPointerDown={(e) => onCellPointerDown(e, d)}
+                                                                onPointerUp={onCellPointerUp}
+                                                                onPointerLeave={onCellPointerUp}
+                                                                onClick={(e) => onCellClick(e, d)}
+                                                                onDoubleClick={(e) => onCellDoubleClick(e, d)}
+                                                                style={{ 
+                                                                    borderRight: '1px solid var(--lcd-pixel)', 
+                                                                    borderBottom: '1px solid var(--lcd-pixel)', 
+                                                                    minHeight: `${50 * calZoom}px`, 
+                                                                    cursor: 'pointer', 
+                                                                    background: isToday ? 'rgba(0,0,0,0.1)' : 'transparent',
+                                                                    display: 'flex',
+                                                                    flexDirection: 'column',
+                                                                    paddingTop: '2px',
+                                                                    overflow: 'hidden',
+                                                                    WebkitUserSelect: 'none', 
+                                                                    WebkitTouchCallout: 'none'
+                                                                }}
+                                                            >
+                                                                <div style={{ 
+                                                                    fontSize: `${Math.max(9, 11 * (calZoom * 0.8))}px`, 
+                                                                    textAlign: 'center', 
+                                                                    marginBottom: '4px', 
+                                                                    fontWeight: isToday ? 'bold' : 'normal', 
+                                                                    color: (i%7===0)?'#ff6b6b':(i%7===6)?'#54a0ff':'inherit' 
+                                                                }}>
+                                                                    {d}
+                                                                </div>
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingBottom: '2px' }}>
+                                                                    {dayEvents.map(ev => {
+                                                                        const isStart = ev.startDate === dateStr;
+                                                                        const isEnd = ev.endDate === dateStr;
+                                                                        return (
+                                                                            <div key={ev.id} style={{ 
+                                                                                height: calZoom > 1.2 ? `${15 * calZoom}px` : `${Math.max(4, 4 * calZoom)}px`, 
+                                                                                backgroundColor: ev.color, 
+                                                                                margin: `0 ${isEnd ? '2px' : '-1px'} 0 ${isStart ? '2px' : '-1px'}`,
+                                                                                borderRadius: `${isStart ? '3px' : '0'} ${isEnd ? '3px' : '0'} ${isEnd ? '3px' : '0'} ${isStart ? '3px' : '0'}`,
+                                                                                display: 'flex',
+                                                                                alignItems: 'center',
+                                                                                padding: calZoom > 1.2 ? '0 3px' : '0',
+                                                                                overflow: 'hidden'
+                                                                            }}>
+                                                                                {calZoom > 1.2 && (
+                                                                                    <span style={{ 
+                                                                                        fontSize: `${8 * calZoom}px`, 
+                                                                                        color: '#fff', 
+                                                                                        whiteSpace: 'nowrap', 
+                                                                                        textOverflow: 'clip',
+                                                                                        lineHeight: 1
+                                                                                    }}>
+                                                                                        {ev.title}
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
                             {tab === 'book' && (
-                                <div className="scrollable" style={{ padding: '15px' }}>
-                                    <div style={{ textAlign: 'center', marginBottom: '20px', fontWeight:'bold', fontSize:'16px' }}>인벤토리 및 도감</div>
-                                    
-                                    <div style={{marginBottom:'20px'}}>
-                                        <div style={{fontSize:'14px', fontWeight:'bold', marginBottom:'10px'}}>🎒 보유 아이템 (클릭하여 장착/해제)</div>
-                                        {inventory.length === 0 && equippedItems.length === 0 && <p style={{fontSize:'13px'}}>획득한 아이템이 없습니다.</p>}
-                                        
-                                        <div style={{display:'flex', flexWrap:'wrap', gap:'8px'}}>
-                                            {equippedItems.map(item => (
-                                                <button key={item.id} className="btn" style={{background:'var(--lcd-pixel)', color:'var(--lcd-bg)', fontSize:'13px', padding:'8px 12px'}} onClick={() => toggleEquipItem(item)}>
-                                                    {item.icon} {item.name} [장착중]
-                                                </button>
-                                            ))}
-                                            {inventory.map(item => (
-                                                <button key={item.id} className="btn" style={{fontSize:'13px', padding:'8px 12px'}} onClick={() => toggleEquipItem(item)}>
-                                                    {item.icon} {item.name}
-                                                </button>
-                                            ))}
-                                        </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                                    <div style={{ display: 'flex', borderBottom: '3px solid var(--lcd-pixel)' }}>
+                                        <div className="nav-item" style={{ padding: '10px 0', background: subTab==='shop'?'var(--lcd-pixel)':'', color: subTab==='shop'?'var(--lcd-bg)':'' }} onClick={() => setSubTab('shop')}>상점/인벤</div>
+                                        <div className="nav-item" style={{ padding: '10px 0', borderRight:'none', background: subTab==='ending'?'var(--lcd-pixel)':'', color: subTab==='ending'?'var(--lcd-bg)':'' }} onClick={() => setSubTab('ending')}>엔딩 도감</div>
                                     </div>
-
-                                    <div style={{borderTop:'4px dashed var(--lcd-pixel)', paddingTop:'20px'}}>
-                                        <div style={{ textAlign: 'center', marginBottom: '15px', fontWeight:'bold', fontSize:'15px' }}>엔딩 도감 ({encyclopedia.length})</div>
-                                        {encyclopedia.map((e, i) => (
-                                            <div key={i} className="panel" style={{padding:'15px 10px'}}>
-                                                <strong style={{ fontSize: '16px' }}>{e.name}</strong><br/>
-                                                <span style={{ fontSize: '14px', marginTop: '6px', display: 'block', lineHeight:'1.4' }}>{e.desc}</span>
-                                            </div>
-                                        ))}
-                                        {encyclopedia.length === 0 && <p style={{ textAlign: 'center', marginTop: '20px', fontSize:'14px' }}>수집된 엔딩이 없습니다.</p>}
+                                    <div className="scrollable" style={{ padding: '15px' }}>
+                                        {subTab === 'shop' && (
+                                            <>
+                                                <div style={{fontSize:'13px', fontWeight:'bold', marginBottom:'10px'}}>🎒 내 인벤토리 (터치 장착)</div>
+                                                <div className="item-grid" style={{marginBottom:'20px'}}>
+                                                    {data.equippedItems.map(i => <div key={i.id} onClick={()=>toggleEquip(i)} className="item-card" style={{background:'var(--lcd-pixel)', color:'var(--lcd-bg)'}}><div>{i.icon}</div><div style={{fontSize:'10px',marginTop:'4px'}}>{i.name}</div></div>)}
+                                                    {data.inventory.map(i => <div key={i.id} onClick={()=>toggleEquip(i)} className="item-card"><div>{i.icon}</div><div style={{fontSize:'10px',marginTop:'4px'}}>{i.name}</div></div>)}
+                                                </div>
+                                                <div style={{fontSize:'13px', fontWeight:'bold', marginBottom:'10px'}}>🛒 상점 (보유: {data.coins}G)</div>
+                                                <div className="item-grid">
+                                                    {ALL_ITEMS.map(item => {
+                                                        const hasItem = data.inventory.some(i => i.id === item.id) || data.equippedItems.some(i => i.id === item.id);
+                                                        return (
+                                                            <div key={item.id} className="item-card" style={{opacity: hasItem?0.5:1}}>
+                                                                <div style={{fontSize:'18px'}}>{item.icon}</div>
+                                                                <div style={{fontSize:'10px', margin:'4px 0', fontWeight:'bold'}}>{item.name}</div>
+                                                                <button className="btn" style={{padding:'4px', fontSize:'10px', width:'100%'}} disabled={hasItem} onClick={()=>buyItem(item)}>{hasItem?'보유중':`${item.price}G`}</button>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </>
+                                        )}
+                                        {subTab === 'ending' && (
+                                            <>
+                                                <div style={{textAlign:'center', marginBottom:'15px', fontWeight:'bold'}}>수집: {data.encyclopedia.length} / {ENDINGS.length}</div>
+                                                {ENDINGS.map(e => {
+                                                    const isFound = data.encyclopedia.find(x => x.id === e.id);
+                                                    return (
+                                                        <div key={e.id} className="panel" style={{marginBottom:'10px', opacity: isFound?1:0.5}}>
+                                                            <div style={{fontWeight:'bold', fontSize:'14px'}}>{isFound ? e.name : '???'}</div>
+                                                            <div style={{fontSize:'12px', marginTop:'5px'}}>{e.desc}</div>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             )}
 
                             {tab === 'setting' && (
                                 <div className="scrollable" style={{ padding: '20px' }}>
-                                    <div className="panel" style={{ borderBottom: 'none' }}>
-                                        <h3 style={{ textAlign: 'center', marginBottom: '25px', fontSize:'18px' }}>시스템 메뉴</h3>
-                                        <button className="btn" style={{ width: '100%', marginBottom: '15px', padding:'15px' }} onClick={triggerDevSkip}>하루 넘기기 (DEV)</button>
-                                        <button className="btn" style={{ width: '100%', padding:'15px' }} onClick={() => { if(window.confirm('정말 초기화하시겠습니까?')) resetGame(true); }}>초기화 (RESET)</button>
+                                    <h3 style={{ textAlign: 'center', marginBottom: '25px' }}>시스템 메뉴</h3>
+                                    
+                                    <div className="panel" style={{marginBottom:'15px'}}>
+                                        <div style={{fontWeight:'bold', marginBottom:'10px'}}>데이터 관리</div>
+                                        <button className="btn" style={{ width: '100%', marginBottom: '10px' }} onClick={exportSave}>세이브 내보내기 (JSON)</button>
+                                        <label className="btn" style={{ width: '100%', marginBottom: '10px', display:'block', textAlign:'center' }}>
+                                            세이브 불러오기
+                                            <input type="file" accept=".json" style={{display:'none'}} onChange={importSave} />
+                                        </label>
+                                        <button className="btn" style={{ width: '100%' }} onClick={hardReset}>전체 초기화</button>
+                                    </div>
+                                    
+                                    <div className="panel">
+                                        <div style={{fontWeight:'bold', marginBottom:'10px'}}>개발자 도구</div>
+                                        <button className="btn" style={{ width: '100%' }} onClick={() => { triggerFeedback('click'); processMidnightDayChange(); }}>강제 하루 넘기기 (DEV)</button>
                                     </div>
                                 </div>
                             )}
                         </div>
 
+                        {showSummary && summaryData && !data.showEvolution && (
+                            <div className="modal-overlay">
+                                <div className="modal-box">
+                                    <h2 style={{ textAlign: 'center', marginTop: 0 }}>DAY {summaryData.day} 결산</h2>
+                                    {summaryData.event && <div className="event-banner">{summaryData.event.title}<br/><span style={{fontSize:'11px', fontWeight:'normal'}}>{summaryData.event.desc}</span></div>}
+                                    <div className="panel" style={{ background: 'rgba(0,0,0,0.05)', marginBottom:'10px' }}>
+                                        <div style={{fontWeight:'bold'}}>연속 출석(COMBO)</div>
+                                        <div style={{fontSize:'13px', marginTop:'5px'}}>{summaryData.combo > 0 ? `🔥 ${summaryData.combo}일 콤보 달성!` : `콤보가 초기화되었습니다 😭`}</div>
+                                    </div>
+                                    {summaryData.penalty > 0 && <div className="panel" style={{ color: 'var(--lcd-pixel)'}}>⚠️ 미완료 패널티: 행복 -{summaryData.penalty}</div>}
+                                    {summaryData.habitResults.length > 0 && (
+                                        <div className="panel">
+                                            <div style={{fontWeight:'bold', marginBottom:'5px'}}>습관 챌린지 결과</div>
+                                            {summaryData.habitResults.map((r,i) => <div key={i} style={{fontSize:'13px'}}>{r.status==='success'?'🌟':'❌'} {r.name} {r.status==='success'?'(성공!)':'(실패)'}</div>)}
+                                        </div>
+                                    )}
+                                    <div style={{textAlign:'center', marginTop:'20px', fontSize:'13px'}}>오늘 하루도 고생하셨습니다!<br/>내일도 화이팅!</div>
+                                    <button className="btn" style={{ width: '100%', marginTop: '15px' }} onClick={() => { triggerFeedback('click'); setShowSummary(false); }}>다음날(A)</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {data.showEvolution && (
+                            <div className="modal-overlay" style={{ zIndex: 200, backgroundColor: 'rgba(0,0,0,0.85)' }}>
+                                <div className="modal-box animate-pop" style={{ textAlign: 'center', borderColor: px, maxWidth: '280px' }}>
+                                    <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '10px' }}>오오...!<br/>모습이 변했어요!</div>
+                                    <div className="animate-bounce" style={{ width: '64px', height: '64px', margin: '30px auto', transform: 'scale(3)', imageRendering: 'pixelated' }}>
+                                        <svg width="100%" height="100%" viewBox="0 0 24 24" style={{ shapeRendering: 'crispEdges' }}>
+                                            {renderCharacter(data.showEvolution, data.charType, 'happy', null, data.equippedItems.filter(i => i.type === 'char'), px, bg)}
+                                        </svg>
+                                    </div>
+                                    <div style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '30px', marginBottom: '20px' }}>
+                                        {TYPE_NAMES[data.charType || 'normal']} {STAGE_NAMES[data.showEvolution]}(이)가<br/>되었습니다!
+                                    </div>
+                                    <button className="btn" style={{ width: '100%', background: 'var(--lcd-pixel)', color: 'var(--lcd-bg)' }} onClick={() => { triggerFeedback('click'); setData(prev => ({...prev, showEvolution: null})); }}>확인</button>
+                                </div>
+                            </div>
+                        )}
+
                         {showHabitModal && (
                             <div className="modal-overlay">
                                 <div className="modal-box">
-                                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'15px', borderBottom:'3px solid var(--lcd-pixel)', paddingBottom:'10px'}}>
-                                        <strong style={{fontSize:'16px'}}>습관 챌린지 설정</strong>
-                                        <button className="btn" style={{padding:'4px 8px', minHeight:'auto'}} onClick={() => setShowHabitModal(false)}>X</button>
+                                    <div style={{display:'flex', justifyContent:'space-between', marginBottom:'15px'}}>
+                                        <strong>습관 챌린지 설정</strong>
+                                        <button className="btn" style={{padding:'2px 8px'}} onClick={() => setShowHabitModal(false)}>X</button>
                                     </div>
-                                    <div style={{fontSize:'14px', marginBottom:'8px'}}>습관 이름</div>
                                     <input placeholder="예: 물 한 컵 마시기" value={habitTitle} onChange={e => setHabitTitle(e.target.value)} />
-                                    
-                                    <div style={{fontSize:'14px', marginBottom:'8px', marginTop:'10px'}}>챌린지 기간</div>
-                                    <select value={habitGoalDays} onChange={e => setHabitGoalDays(Number(e.target.value))}>
-                                        <option value={3}>3일 챌린지</option>
-                                        <option value={7}>7일 챌린지</option>
-                                        <option value={14}>14일 챌린지</option>
-                                        <option value={30}>30일 챌린지</option>
+                                    <div style={{marginTop:'10px'}}>챌린지 기간</div>
+                                    <select value={habitGoal} onChange={e => setHabitGoal(Number(e.target.value))}>
+                                        <option value={3}>3일</option><option value={7}>7일</option>
+                                        <option value={14}>14일</option><option value={30}>30일</option>
                                     </select>
-
-                                    <div style={{fontSize:'14px', marginBottom:'8px', marginTop:'10px'}}>카테고리</div>
-                                    <select value={habitCategory} onChange={e => setHabitCategory(e.target.value)}>
+                                    <div style={{marginTop:'10px'}}>카테고리</div>
+                                    <select value={habitCat} onChange={e => setHabitCat(e.target.value)}>
                                         {Object.keys(CATEGORIES).map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
+                                    <button className="btn" style={{width:'100%', marginTop:'20px'}} onClick={addHabit}>시작하기</button>
+                                </div>
+                            </div>
+                        )}
 
-                                    <button className="btn" style={{width:'100%', marginTop:'20px', padding:'12px', background:'var(--lcd-pixel)', color:'var(--lcd-bg)'}} onClick={addHabit}>습관 등록 및 시작</button>
+                        {selectedCalDate && (
+                            <div className="modal-overlay" style={{ zIndex: 150 }}>
+                                <div className="modal-box">
+                                    <div style={{display:'flex', justifyContent:'space-between', marginBottom:'15px'}}>
+                                        <strong>{selectedCalDate} 일정</strong>
+                                        <button className="btn" style={{padding:'2px 8px'}} onClick={() => {triggerFeedback('click'); setSelectedCalDate(null)}}>X</button>
+                                    </div>
+
+                                    {calModalMode === 'view' && (
+                                        <>
+                                            <div style={{marginBottom:'20px', maxHeight: '200px', overflowY: 'auto'}}>
+                                                {data.calendarEvents.filter(ev => selectedCalDate >= ev.startDate && selectedCalDate <= ev.endDate).map(ev => (
+                                                    <div key={ev.id} style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px', background:'rgba(0,0,0,0.05)', marginBottom:'4px', borderRadius:'4px'}}>
+                                                        <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
+                                                            <div style={{width:'12px', height:'12px', backgroundColor:ev.color, borderRadius:'50%'}}></div>
+                                                            <span style={{fontSize:'14px', wordBreak:'break-all'}}>{ev.title}</span>
+                                                        </div>
+                                                        {isEditableDate(selectedCalDate) && (
+                                                            <button className="btn" style={{padding:'2px 6px', fontSize:'10px'}} onClick={() => deleteCalEvent(ev.id)}>삭제</button>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                                {data.calendarEvents.filter(ev => selectedCalDate >= ev.startDate && selectedCalDate <= ev.endDate).length === 0 && (
+                                                    <div style={{fontSize:'13px', opacity:0.6, textAlign:'center'}}>등록된 일정이 없습니다.</div>
+                                                )}
+                                            </div>
+
+                                            {isEditableDate(selectedCalDate) ? (
+                                                <button className="btn" style={{width:'100%', marginTop:'10px'}} onClick={() => { triggerFeedback('click'); setCalModalMode('add'); }}>+ 일정 추가하기</button>
+                                            ) : (
+                                                <div style={{fontSize:'12px', color:'#ff6b6b', textAlign:'center', marginTop:'15px'}}>
+                                                    * 현재 게임 진행 기간(1일~30일) 외에는<br/>일정을 추가/삭제할 수 없습니다.
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+
+                                    {calModalMode === 'add' && (
+                                        <div>
+                                            {isEditableDate(selectedCalDate) ? (
+                                                <div style={{borderTop:'2px dashed var(--lcd-pixel)', paddingTop:'15px'}}>
+                                                    <div style={{fontWeight:'bold', fontSize:'13px', marginBottom:'10px'}}>새 일정 추가</div>
+                                                    <input placeholder="일정 내용" value={calEventTitle} onChange={e => setCalEventTitle(e.target.value)} />
+                                                    <div style={{fontSize:'12px', marginBottom:'4px', marginTop:'5px'}}>종료일 (연속일정용)</div>
+                                                    <input type="date" value={calEventEndDate} min={selectedCalDate} onChange={e => setCalEventEndDate(e.target.value)} style={{fontSize:'14px'}} />
+                                                    <div style={{fontSize:'12px', marginBottom:'4px', marginTop:'5px'}}>표시 색상</div>
+                                                    <select value={calEventColor} onChange={e => setCalEventColor(e.target.value)}>
+                                                        <option value="#ff6b6b">빨강</option>
+                                                        <option value="#ff9f43">주황</option>
+                                                        <option value="#feca57">노랑</option>
+                                                        <option value="#1dd1a1">초록</option>
+                                                        <option value="#54a0ff">파랑</option>
+                                                        <option value="#5f27cd">보라</option>
+                                                        <option value="#222222">검정</option>
+                                                    </select>
+                                                    <button className="btn" style={{width:'100%', marginTop:'15px'}} onClick={() => {
+                                                        addCalEvent();
+                                                        setCalModalMode('view');
+                                                    }}>저장</button>
+                                                    <button className="btn" style={{width:'100%', marginTop:'5px', opacity: 0.7}} onClick={() => { triggerFeedback('click'); setCalModalMode('view'); }}>취소</button>
+                                                </div>
+                                            ) : (
+                                                <div style={{fontSize:'12px', color:'#ff6b6b', textAlign:'center', marginTop:'15px'}}>
+                                                    * 현재 게임 진행 기간(1일~30일) 외에는<br/>일정을 추가/삭제할 수 없습니다.
+                                                    <button className="btn" style={{width:'100%', marginTop:'10px'}} onClick={() => setCalModalMode('view')}>뒤로</button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
 
                         <div className="nav-bar">
-                            <div className={`nav-item ${tab === 'home' ? 'active' : ''}`} onClick={() => handleNav('home')}>홈</div>
-                            <div className={`nav-item ${tab === 'todo' ? 'active' : ''}`} onClick={() => handleNav('todo')}>할일</div>
-                            <div className={`nav-item ${tab === 'book' ? 'active' : ''}`} onClick={() => handleNav('book')}>도감</div>
-                            <div className={`nav-item ${tab === 'setting' ? 'active' : ''}`} onClick={() => handleNav('setting')}>설정</div>
+                            <div className={`nav-item ${tab === 'home' ? 'active' : ''}`} onClick={() => {triggerFeedback('click'); setTab('home');}}>홈</div>
+                            <div className={`nav-item ${tab === 'todo' ? 'active' : ''}`} onClick={() => {triggerFeedback('click'); setTab('todo');}}>할일</div>
+                            <div className={`nav-item ${tab === 'book' ? 'active' : ''}`} onClick={() => {triggerFeedback('click'); setTab('book');}}>도감</div>
+                            <div className={`nav-item ${tab === 'setting' ? 'active' : ''}`} onClick={() => {triggerFeedback('click'); setTab('setting');}}>설정</div>
                         </div>
                     </div>
                 </div>
