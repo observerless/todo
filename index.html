@@ -80,7 +80,7 @@
 
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
-        const SAVE_VERSION = 6; 
+        const SAVE_VERSION = 10; 
         const MAX_DAYS = 30;
 
         const getYYYYMMDD = (d) => {
@@ -125,6 +125,17 @@
         ];
 
         const ENDINGS = [
+            // 🌟 위대한 영웅 엔딩 업데이트 🌟
+            { 
+                id: 'e_hero', 
+                name: '위대한 영웅', 
+                desc: '매일 할 일 2개 이상 & 누적 65개 이상 완료 및 단 한 번도 포기(삭제) 안 함!', 
+                condition: (s, a, data) => {
+                    const totalCompleted = Object.values(a).reduce((sum, val) => sum + val, 0);
+                    return totalCompleted >= 65 && !data.hasDeletedTodo && data.todos.length === 0 && !data.failedDailyMinTasks;
+                }, 
+                story: "당신은 자신이 내뱉은 말은 무조건 지키는 진짜 영웅입니다!\n단 한 번의 포기(삭제)도 없이 매일 꾸준히, 총 65개 이상의 할 일을 끝까지 해냈습니다.\n이 픽셀 세계에서 가장 꺾이지 않는 굳건한 의지의 소유자입니다." 
+            },
             { id: 'e_insider', name: '슈퍼 인싸', desc: '사교 활동을 20회 이상 달성!', condition: (s, a) => a['사교'] >= 20, story: "당신의 캘린더는 쉴 틈이 없습니다.\n어딜 가든 사람들이 당신을 찾고 붐비는 파티의 중심엔 항상 당신이 있죠.\n픽셀 세계 최고의 마당발이 되었습니다!" },
             { id: 'e_gymrat', name: '운동광', desc: '운동 활동을 20회 이상 달성!', condition: (s, a) => a['운동'] >= 20, story: "3대 500은 기본!\n비가 오나 눈이 오나 헬스장을 출석한 결과, 거대한 근육 덩어리가 되었습니다.\n프로틴 쉐이크 건배!" },
             { id: 'e_workaholic', name: '일 중독', desc: '업무를 20회 이상 달성!', condition: (s, a) => a['업무'] >= 20, story: "워라밸이 뭔가요?\n당신은 완벽한 커리어를 위해 밤낮없이 일했습니다.\n통장 잔고는 넉넉하지만 눈밑 다크서클이 짙네요." },
@@ -298,7 +309,6 @@
             if (action === 'study') face = 'normal';
             if (action === 'sleep') face = 'sleeping';
 
-            // 시간대별 테마 컬러맵 완벽 연동
             const bgMap = { 'dawn':'#325a5f', 'morning':'#8fa07d', 'afternoon':'#899b7f', 'night':'#1f2d18' };
             const pxMap = { 'dawn':'#54a3a1', 'morning':'#3e4835', 'afternoon':'#2e3c10', 'night':'#a1b590' };
             const bg = bgMap[timeZone] || '#8fa07d';
@@ -420,6 +430,86 @@
             );
         };
 
+        const TodoItem = ({ t, onComplete, onDelete, onEdit }) => {
+            const [offsetX, setOffset] = useState(0);
+            const startX = useRef(0);
+            const startY = useRef(0);
+            const isSwiping = useRef(false);
+            const pressTimer = useRef(null);
+
+            const handlePointerDown = (e) => {
+                startX.current = e.clientX;
+                startY.current = e.clientY;
+                isSwiping.current = true;
+                e.target.setPointerCapture(e.pointerId);
+                
+                pressTimer.current = setTimeout(() => {
+                    if(isSwiping.current) {
+                        isSwiping.current = false;
+                        setOffset(0);
+                        triggerFeedback('success');
+                        onEdit(t);
+                    }
+                }, 600);
+            };
+
+            const handlePointerMove = (e) => {
+                if (!isSwiping.current) return;
+                const diffX = e.clientX - startX.current;
+                const diffY = e.clientY - startY.current;
+                
+                if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) {
+                    clearTimeout(pressTimer.current);
+                }
+                
+                if (diffX < 0 && Math.abs(diffX) > Math.abs(diffY)) {
+                    setOffset(Math.max(diffX, -80));
+                }
+            };
+
+            const handlePointerUp = (e) => {
+                clearTimeout(pressTimer.current);
+                if (!isSwiping.current) return;
+                isSwiping.current = false;
+                if (offsetX <= -50) {
+                    onDelete(t.id);
+                } else {
+                    setOffset(0);
+                }
+            };
+
+            return (
+                <div style={{ position: 'relative', marginBottom: '6px' }}>
+                    <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '80px', backgroundColor: '#ff6b6b', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '13px', fontWeight: 'bold' }}>
+                        삭제
+                    </div>
+                    <div 
+                        onPointerDown={handlePointerDown}
+                        onPointerMove={handlePointerMove}
+                        onPointerUp={handlePointerUp}
+                        onPointerCancel={handlePointerUp}
+                        style={{ 
+                            position: 'relative',
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                            padding: '10px', borderRadius: '4px',
+                            backgroundColor: 'var(--lcd-bg)',
+                            borderBottom: '2px dashed var(--lcd-pixel)',
+                            transform: `translateX(${offsetX}px)`,
+                            transition: isSwiping.current ? 'none' : 'transform 0.2s ease-out',
+                            zIndex: 2,
+                            touchAction: 'pan-y',
+                            userSelect: 'none'
+                        }}>
+                        <div style={{ textDecoration: t.isDone ? 'line-through' : 'none', opacity: t.isDone ? 0.5 : 1, flex: 1 }}>
+                            <span className="tag">{t.category}</span>
+                            <div style={{ fontSize: '14px' }}>{t.title}</div>
+                        </div>
+                        {!t.isDone && <button className="btn" onPointerDown={e => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onComplete(t.id); }}>완료</button>}
+                    </div>
+                </div>
+            );
+        };
+
         const App = () => {
             const [data, setData] = useState(() => {
                 try {
@@ -428,6 +518,10 @@
                         let parsed = JSON.parse(saved);
                         if (!parsed.calendarEvents) parsed.calendarEvents = [];
                         if (!parsed.gameStartDate) parsed.gameStartDate = getYYYYMMDD(new Date());
+                        if (parsed.hasDeletedTodo === undefined) parsed.hasDeletedTodo = false;
+                        if (parsed.totalCreatedTodos === undefined) parsed.totalCreatedTodos = 0;
+                        if (parsed.failedDailyMinTasks === undefined) parsed.failedDailyMinTasks = false;
+                        if (parsed.todayCompletedCount === undefined) parsed.todayCompletedCount = 0;
                         return parsed;
                     }
                 } catch(e) {}
@@ -442,7 +536,9 @@
                     dailyMission: null, dailyMissionCompleted: false,
                     lastDate: new Date().toDateString(), isSick: false, firstPlay: true, randomEvent: null,
                     showEvolution: null,
-                    calendarEvents: [], gameStartDate: getYYYYMMDD(new Date())
+                    calendarEvents: [], gameStartDate: getYYYYMMDD(new Date()),
+                    hasDeletedTodo: false, totalCreatedTodos: 0,
+                    failedDailyMinTasks: false, todayCompletedCount: 0
                 };
             });
 
@@ -457,6 +553,10 @@
             
             const [newTodoTitle, setNewTodoTitle] = useState('');
             const [newTodoCat, setNewTodoCat] = useState('공부');
+
+            const [editingTodoId, setEditingTodoId] = useState(null);
+            const [editTodoTitle, setEditTodoTitle] = useState('');
+            const [editTodoCat, setEditTodoCat] = useState('');
             
             const [showHabitModal, setShowHabitModal] = useState(false);
             const [habitTitle, setHabitTitle] = useState('');
@@ -478,6 +578,11 @@
             const [calEventTitle, setCalEventTitle] = useState('');
             const [calEventEndDate, setCalEventEndDate] = useState('');
             const [calEventColor, setCalEventColor] = useState('#ff6b6b');
+
+            const bgMap = { 'dawn':'#325a5f', 'morning':'#8fa07d', 'afternoon':'#899b7f', 'night':'#1f2d18' };
+            const pxMap = { 'dawn':'#54a3a1', 'morning':'#3e4835', 'afternoon':'#2e3c10', 'night':'#a1b590' };
+            const bg = bgMap[timeZone] || '#8fa07d';
+            const px = pxMap[timeZone] || '#3e4835';
 
             useEffect(() => {
                 if (data.showEvolution) {
@@ -585,7 +690,15 @@
                 setData(prev => {
                     let next = { ...prev, lastDate: new Date().toDateString(), randomEvent: null };
                     
-                    const uncompleted = next.todos.filter(t => !t.isDone).length;
+                    // 🌟 위대한 영웅을 위한 일일 2개 미만 완료 체크 🌟
+                    if ((prev.todayCompletedCount || 0) < 2) {
+                        next.failedDailyMinTasks = true;
+                    }
+                    next.todayCompletedCount = 0;
+
+                    const completedTodos = prev.todos.filter(t => t.isDone);
+                    const uncompleted = prev.todos.length - completedTodos.length;
+                    
                     let penalty = uncompleted * 5;
                     if (uncompleted >= 2 || next.fatigue >= 90 || next.stats.hap <= 20) {
                         if (Math.random() > 0.5) next.isSick = true;
@@ -601,6 +714,33 @@
                         next.combo = 0;
                     }
 
+                    const dayLogs = [];
+                    let sumStats = { int:0, str:0, emo:0, soc:0, life:0, dil:0, hap:0 };
+
+                    completedTodos.forEach(t => {
+                        const eff = CATEGORIES[t.category];
+                        const effStrs = [];
+                        if (eff) {
+                            Object.keys(eff).forEach(k => {
+                                if (k !== 'fatigue' && STAT_NAMES[k]) {
+                                    sumStats[k] = (sumStats[k] || 0) + eff[k];
+                                    effStrs.push(`${STAT_NAMES[k]} +${eff[k]}`);
+                                }
+                            });
+                            dayLogs.push(`✔️ [${t.category}] ${t.title} (${effStrs.join(', ')})`);
+                        }
+                    });
+
+                    const checkedHabits = prev.habits.filter(h => h.checkedToday);
+                    checkedHabits.forEach(h => {
+                        sumStats.dil = (sumStats.dil || 0) + 1;
+                        dayLogs.push(`🔄 [습관] ${h.title} 체크 (성실 +1)`);
+                    });
+
+                    if (prev.dailyMissionCompleted && prev.dailyMission) {
+                        dayLogs.push(`🌟 [미션] ${prev.dailyMission.title} 완료!`);
+                    }
+
                     let habitResults = [];
                     let newHabits = [];
                     next.habits.forEach(h => {
@@ -609,8 +749,14 @@
                             const successRate = h.checkedCount / h.goalDays;
                             if (successRate >= 0.7) {
                                 habitResults.push({ name: h.title, status: 'success' });
-                                Object.keys(next.stats).forEach(k => { if(k!=='fatigue') next.stats[k] = Math.min(100, next.stats[k] + 2); });
+                                Object.keys(next.stats).forEach(k => { 
+                                    if(k!=='fatigue') {
+                                        next.stats[k] = Math.min(100, next.stats[k] + 2); 
+                                        sumStats[k] = (sumStats[k] || 0) + 2;
+                                    }
+                                });
                                 next.coins += 100;
+                                dayLogs.push(`🎉 [목표달성] ${h.title} (모든 스탯 +2, 100G)`);
                             } else {
                                 habitResults.push({ name: h.title, status: 'fail' });
                             }
@@ -649,7 +795,35 @@
                     next.dailyMissionCompleted = false;
                     next.dailyMissionProgress = 0;
 
-                    setSummaryData({ day: prev.day, penalty, combo: next.combo, habitResults, event: next.randomEvent });
+                    const praises = [
+                        "오늘 하루도 정말 알차게 보냈네요! 대단해요 👏",
+                        "꾸준히 노력하는 모습이 멋져요! ✨",
+                        "오늘 흘린 땀방울이 내일의 성장을 만들 거예요 💪",
+                        "작은 실천들이 모여 큰 변화를 이뤄내고 있어요 🌱",
+                        "스스로와의 약속을 지켜낸 당신, 최고예요! 🏆"
+                    ];
+                    let praise = "";
+                    if (dayLogs.length === 0) {
+                        praise = "오늘은 푹 쉬었군요! 푹 쉰 만큼 내일은 더 활기차게 시작해봐요 🛌💤";
+                    } else {
+                        praise = praises[Math.floor(Math.random() * praises.length)];
+                    }
+
+                    const totalGrowthStr = Object.entries(sumStats)
+                        .filter(([k, v]) => v > 0)
+                        .map(([k, v]) => `${STAT_NAMES[k]} +${v}`)
+                        .join(', ');
+
+                    setSummaryData({ 
+                        day: prev.day, 
+                        penalty, 
+                        combo: next.combo, 
+                        habitResults, 
+                        event: next.randomEvent,
+                        dayLogs,
+                        totalGrowthStr,
+                        praise
+                    });
                     
                     if (next.day > MAX_DAYS) {
                         setTimeout(() => triggerEnding(next), 0);
@@ -676,9 +850,35 @@
                 triggerFeedback('click');
                 setData(prev => ({
                     ...prev,
+                    totalCreatedTodos: (prev.totalCreatedTodos || 0) + 1,
                     todos: [{ id: Date.now().toString(), title: newTodoTitle, category: newTodoCat, isDone: false }, ...prev.todos]
                 }));
                 setNewTodoTitle('');
+            };
+
+            const deleteTodo = (id) => {
+                triggerFeedback('click');
+                setData(prev => ({ 
+                    ...prev, 
+                    hasDeletedTodo: true,
+                    todos: prev.todos.filter(t => t.id !== id) 
+                }));
+            };
+
+            const openEditTodo = (t) => {
+                setEditingTodoId(t.id);
+                setEditTodoTitle(t.title);
+                setEditTodoCat(t.category);
+            };
+
+            const saveEditTodo = () => {
+                if(!editTodoTitle.trim()) return;
+                triggerFeedback('click');
+                setData(prev => ({
+                    ...prev,
+                    todos: prev.todos.map(t => t.id === editingTodoId ? { ...t, title: editTodoTitle, category: editTodoCat } : t)
+                }));
+                setEditingTodoId(null);
             };
 
             const addHabit = () => {
@@ -704,7 +904,8 @@
                         ...prev, 
                         stats: { ...prev.stats }, 
                         actionCounts: { ...prev.actionCounts },
-                        todos: prev.todos.map(t => t.id === id ? { ...t, isDone: true } : t)
+                        todos: prev.todos.map(t => t.id === id ? { ...t, isDone: true } : t),
+                        todayCompletedCount: (prev.todayCompletedCount || 0) + 1 // 🌟 완료 카운트 증가
                     };
                     
                     next.coins += 10;
@@ -972,7 +1173,11 @@
                                 showEvolution: null,
                                 dailyMissionCompleted: false,
                                 dailyMissionProgress: 0,
-                                gameStartDate: getYYYYMMDD(new Date())
+                                gameStartDate: getYYYYMMDD(new Date()),
+                                hasDeletedTodo: false,
+                                totalCreatedTodos: 0,
+                                failedDailyMinTasks: false,
+                                todayCompletedCount: 0
                             }));
                             setEnding(null);
                             setTab('home');
@@ -1054,16 +1259,10 @@
                                                     ))}
                                                 </div>}
 
-                                                <div style={{fontSize:'13px', fontWeight:'bold', marginBottom:'8px'}}>📝 오늘 할 일</div>
+                                                <div style={{fontSize:'13px', fontWeight:'bold', marginBottom:'8px'}}>📝 오늘 할 일 (스와이프 삭제 / 꾹 눌러 수정)</div>
                                                 {data.todos.length === 0 && <p style={{fontSize:'13px', opacity:0.7}}>할 일이 없습니다.</p>}
                                                 {data.todos.map(t => (
-                                                    <div key={t.id} className="panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', marginBottom:'6px', borderRadius:'4px' }}>
-                                                        <div style={{ textDecoration: t.isDone ? 'line-through' : 'none', opacity: t.isDone ? 0.5 : 1 }}>
-                                                            <span className="tag">{t.category}</span>
-                                                            <div style={{ fontSize: '14px' }}>{t.title}</div>
-                                                        </div>
-                                                        {!t.isDone && <button className="btn" onClick={() => completeTodo(t.id)}>완료</button>}
-                                                    </div>
+                                                    <TodoItem key={t.id} t={t} onComplete={completeTodo} onDelete={deleteTodo} onEdit={openEditTodo} />
                                                 ))}
                                             </div>
                                         </div>
@@ -1094,6 +1293,17 @@
                                                         const dateStr = `${calYear}-${String(calMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                                                         const isToday = dateStr === getYYYYMMDD(new Date());
                                                         
+                                                        let isInGame = false;
+                                                        if (data.gameStartDate) {
+                                                            const [sY, sM, sD] = data.gameStartDate.split('-');
+                                                            const startDateObj = new Date(sY, sM - 1, sD);
+                                                            const targetDateObj = new Date(calYear, calMonth - 1, d);
+                                                            const diff = Math.floor((targetDateObj - startDateObj) / (1000 * 60 * 60 * 24));
+                                                            if (diff >= 0 && diff < MAX_DAYS) isInGame = true;
+                                                        }
+
+                                                        const cellBg = isToday ? 'rgba(0,0,0,0.2)' : (isInGame ? 'rgba(0,0,0,0.08)' : 'transparent');
+                                                        
                                                         const dayEvents = data.calendarEvents
                                                             .filter(ev => dateStr >= ev.startDate && dateStr <= ev.endDate)
                                                             .sort((a,b) => a.startDate.localeCompare(b.startDate) || a.id.localeCompare(b.id));
@@ -1111,7 +1321,7 @@
                                                                     borderBottom: '1px solid var(--lcd-pixel)', 
                                                                     minHeight: `${50 * calZoom}px`, 
                                                                     cursor: 'pointer', 
-                                                                    background: isToday ? 'rgba(0,0,0,0.1)' : 'transparent',
+                                                                    background: cellBg,
                                                                     display: 'flex',
                                                                     flexDirection: 'column',
                                                                     paddingTop: '2px',
@@ -1238,23 +1448,54 @@
                             )}
                         </div>
 
+                        {/* 🌟 결산 모달 화면 (상세내역 추가) 🌟 */}
                         {showSummary && summaryData && !data.showEvolution && (
-                            <div className="modal-overlay">
-                                <div className="modal-box">
-                                    <h2 style={{ textAlign: 'center', marginTop: 0 }}>DAY {summaryData.day} 결산</h2>
-                                    {summaryData.event && <div className="event-banner">{summaryData.event.title}<br/><span style={{fontSize:'11px', fontWeight:'normal'}}>{summaryData.event.desc}</span></div>}
-                                    <div className="panel" style={{ background: 'rgba(0,0,0,0.05)', marginBottom:'10px' }}>
-                                        <div style={{fontWeight:'bold'}}>연속 출석(COMBO)</div>
-                                        <div style={{fontSize:'13px', marginTop:'5px'}}>{summaryData.combo > 0 ? `🔥 ${summaryData.combo}일 콤보 달성!` : `콤보가 초기화되었습니다 😭`}</div>
+                            <div className="modal-overlay" style={{ zIndex: 300 }}>
+                                <div className="modal-box" style={{ padding: '15px' }}>
+                                    <h2 style={{ textAlign: 'center', marginTop: 0, marginBottom: '10px' }}>DAY {summaryData.day} 결산</h2>
+                                    
+                                    {summaryData.event && <div className="event-banner" style={{padding:'8px', fontSize:'12px'}}>{summaryData.event.title}<br/><span style={{fontSize:'11px', fontWeight:'normal'}}>{summaryData.event.desc}</span></div>}
+
+                                    <div className="panel" style={{ background: 'rgba(0,0,0,0.05)', marginBottom:'10px', padding:'10px', maxHeight:'120px', overflowY:'auto' }}>
+                                        <div style={{fontWeight:'bold', fontSize:'13px', marginBottom:'5px'}}>📋 오늘의 활동 내역</div>
+                                        {summaryData.dayLogs && summaryData.dayLogs.length > 0 ? (
+                                            summaryData.dayLogs.map((log, i) => <div key={i} style={{fontSize:'12px', marginBottom:'3px', wordBreak:'break-all'}}>{log}</div>)
+                                        ) : (
+                                            <div style={{fontSize:'12px', opacity:0.6}}>활동 내역이 없습니다.</div>
+                                        )}
                                     </div>
-                                    {summaryData.penalty > 0 && <div className="panel" style={{ color: 'var(--lcd-pixel)'}}>⚠️ 미완료 패널티: 행복 -{summaryData.penalty}</div>}
-                                    {summaryData.habitResults.length > 0 && (
-                                        <div className="panel">
-                                            <div style={{fontWeight:'bold', marginBottom:'5px'}}>습관 챌린지 결과</div>
-                                            {summaryData.habitResults.map((r,i) => <div key={i} style={{fontSize:'13px'}}>{r.status==='success'?'🌟':'❌'} {r.name} {r.status==='success'?'(성공!)':'(실패)'}</div>)}
+
+                                    {summaryData.totalGrowthStr && (
+                                        <div className="panel" style={{ marginBottom:'10px', padding:'8px 10px' }}>
+                                            <div style={{fontWeight:'bold', fontSize:'12px', color:'var(--lcd-pixel)'}}>📈 총 성장 스탯</div>
+                                            <div style={{fontSize:'12px', marginTop:'4px'}}>{summaryData.totalGrowthStr}</div>
                                         </div>
                                     )}
-                                    <div style={{textAlign:'center', marginTop:'20px', fontSize:'13px'}}>오늘 하루도 고생하셨습니다!<br/>내일도 화이팅!</div>
+
+                                    <div style={{ display:'flex', gap:'5px', marginBottom:'10px' }}>
+                                        <div className="panel" style={{ flex:1, padding:'8px', background:'rgba(0,0,0,0.05)' }}>
+                                            <div style={{fontWeight:'bold', fontSize:'11px'}}>연속 출석</div>
+                                            <div style={{fontSize:'11px', marginTop:'4px'}}>{summaryData.combo > 0 ? `🔥 ${summaryData.combo}일 콤보!` : `초기화됨 😭`}</div>
+                                        </div>
+                                        {summaryData.penalty > 0 && (
+                                            <div className="panel" style={{ flex:1, padding:'8px', color:'#ff6b6b' }}>
+                                                <div style={{fontWeight:'bold', fontSize:'11px'}}>⚠️ 패널티</div>
+                                                <div style={{fontSize:'11px', marginTop:'4px'}}>행복 -{summaryData.penalty}</div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {summaryData.habitResults.length > 0 && (
+                                        <div className="panel" style={{ padding:'8px 10px', marginBottom:'10px' }}>
+                                            <div style={{fontWeight:'bold', fontSize:'12px', marginBottom:'4px'}}>습관 챌린지 결과</div>
+                                            {summaryData.habitResults.map((r,i) => <div key={i} style={{fontSize:'11px'}}>{r.status==='success'?'🌟':'❌'} {r.name} {r.status==='success'?'(성공!)':'(실패)'}</div>)}
+                                        </div>
+                                    )}
+
+                                    <div style={{textAlign:'center', marginTop:'15px', fontSize:'13px', fontWeight:'bold', color:'var(--lcd-pixel)', padding:'10px', border:'1px dashed var(--lcd-pixel)', borderRadius:'4px'}}>
+                                        {summaryData.praise}
+                                    </div>
+
                                     <button className="btn" style={{ width: '100%', marginTop: '15px' }} onClick={() => { triggerFeedback('click'); setShowSummary(false); }}>다음날(A)</button>
                                 </div>
                             </div>
@@ -1299,6 +1540,25 @@
                             </div>
                         )}
 
+                        {/* 🌟 할 일 수정 모달 🌟 */}
+                        {editingTodoId && (
+                            <div className="modal-overlay" style={{ zIndex: 150 }}>
+                                <div className="modal-box">
+                                    <div style={{display:'flex', justifyContent:'space-between', marginBottom:'15px'}}>
+                                        <strong>할 일 수정</strong>
+                                        <button className="btn" style={{padding:'2px 8px'}} onClick={() => setEditingTodoId(null)}>X</button>
+                                    </div>
+                                    <input value={editTodoTitle} onChange={e => setEditTodoTitle(e.target.value)} />
+                                    <div style={{marginTop:'10px', marginBottom: '5px', fontSize:'12px'}}>카테고리</div>
+                                    <select value={editTodoCat} onChange={e => setEditTodoCat(e.target.value)}>
+                                        {Object.keys(CATEGORIES).map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                    <button className="btn" style={{width:'100%', marginTop:'20px'}} onClick={saveEditTodo}>저장</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 🌟 달력 날짜 클릭 시 나타나는 일정 모달 🌟 */}
                         {selectedCalDate && (
                             <div className="modal-overlay" style={{ zIndex: 150 }}>
                                 <div className="modal-box">
@@ -1344,16 +1604,23 @@
                                                     <input placeholder="일정 내용" value={calEventTitle} onChange={e => setCalEventTitle(e.target.value)} />
                                                     <div style={{fontSize:'12px', marginBottom:'4px', marginTop:'5px'}}>종료일 (연속일정용)</div>
                                                     <input type="date" value={calEventEndDate} min={selectedCalDate} onChange={e => setCalEventEndDate(e.target.value)} style={{fontSize:'14px'}} />
+                                                    
                                                     <div style={{fontSize:'12px', marginBottom:'4px', marginTop:'5px'}}>표시 색상</div>
-                                                    <select value={calEventColor} onChange={e => setCalEventColor(e.target.value)}>
-                                                        <option value="#ff6b6b">빨강</option>
-                                                        <option value="#ff9f43">주황</option>
-                                                        <option value="#feca57">노랑</option>
-                                                        <option value="#1dd1a1">초록</option>
-                                                        <option value="#54a0ff">파랑</option>
-                                                        <option value="#5f27cd">보라</option>
-                                                        <option value="#222222">검정</option>
-                                                    </select>
+                                                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                                                        {['#ff6b6b', '#ff9f43', '#feca57', '#1dd1a1', '#54a0ff', '#5f27cd'].map(color => (
+                                                            <div 
+                                                                key={color} 
+                                                                onClick={() => setCalEventColor(color)}
+                                                                style={{
+                                                                    width: '30px', height: '30px', borderRadius: '4px', backgroundColor: color,
+                                                                    border: calEventColor === color ? '3px solid var(--lcd-pixel)' : '3px solid transparent',
+                                                                    cursor: 'pointer',
+                                                                    boxShadow: calEventColor === color ? 'inset 0 0 0 2px var(--lcd-bg)' : 'none'
+                                                                }}
+                                                            />
+                                                        ))}
+                                                    </div>
+
                                                     <button className="btn" style={{width:'100%', marginTop:'15px'}} onClick={() => {
                                                         addCalEvent();
                                                         setCalModalMode('view');
